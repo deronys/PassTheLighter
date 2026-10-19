@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
@@ -10,10 +10,11 @@ import { common, fonts, colors } from '../theme';
 
 type Props = {
   state: GameState;
+  onHistory: () => void;
   onSubmit: (picks: Record<string, number>) => void;
 };
 
-export function VoteScreen({ state, onSubmit }: Props) {
+export function VoteScreen({ state, onHistory, onSubmit }: Props) {
   const [picks, setPicks] = useState<Record<string, number>>({});
   const { players, voter, categories } = state;
   const done = categories.every((c) => picks[c] !== undefined);
@@ -34,6 +35,9 @@ export function VoteScreen({ state, onSubmit }: Props) {
       <Text style={[common.muted, common.center]}>
         {players[voter].avatar} {players[voter].name}, vote in secret. You can't vote for yourself.
       </Text>
+      <Pressable accessibilityRole="button" onPress={onHistory} style={styles.history}>
+        <Text style={styles.historyLabel}>📜 See every question and answer</Text>
+      </Pressable>
       {categories.map((id) => {
         const category = findCategory(id);
         return (
@@ -49,7 +53,7 @@ export function VoteScreen({ state, onSubmit }: Props) {
                     key={player.id}
                     player={player}
                     size={46}
-                    selected={picks[id] === index}
+                    checked={picks[id] === index}
                     dimmed={picks[id] !== undefined && picks[id] !== index}
                     onPress={() => setPicks({ ...picks, [id]: index })}
                   />
@@ -68,6 +72,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: 19,
     color: colors.ember,
+  },
+  history: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceStrong,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  historyLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.text,
   },
   players: {
     flexDirection: 'row',

@@ -1,41 +1,29 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { Lighter } from '../components/Lighter';
 import { Screen } from '../components/Screen';
-import { MIN_PLAYERS } from '../game';
-import type { Profile } from '../profiles';
+import { gameStatus, isFinished } from '../game';
+import type { SavedGame } from '../games';
 import { colors, common, fonts } from '../theme';
-import { NewPlayerSheet } from './NewPlayerSheet';
 
 type Props = {
-  profiles: Profile[];
-  selected: string[];
+  games: SavedGame[];
   muted: boolean;
-  onToggle: (id: string) => void;
-  onCreate: (profile: Profile) => void;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
+  onNewGame: () => void;
   onProfiles: () => void;
   onMute: () => void;
-  onStart: () => void;
 };
 
-export function HomeScreen({ profiles, selected, muted, onToggle, onCreate, onProfiles, onMute, onStart }: Props) {
-  const [adding, setAdding] = useState(false);
-  const missing = MIN_PLAYERS - selected.length;
+export function HomeScreen({ games, muted, onOpen, onDelete, onNewGame, onProfiles, onMute }: Props) {
+  const active = games.filter((g) => !isFinished(g.state));
+  const finished = games.filter((g) => isFinished(g.state));
 
   return (
-    <Screen
-      footer={
-        <Button
-          label={missing > 0 ? `Pick ${missing} more` : `Start · ${selected.length} players`}
-          disabled={missing > 0}
-          sound="flick"
-          onPress={onStart}
-        />
-      }
-    >
+    <Screen footer={<Button label="New game" sound="flick" onPress={onNewGame} />}>
       <View style={styles.topRow}>
         <Pressable accessibilityRole="button" onPress={onProfiles} style={styles.pill}>
           <Text style={styles.pillLabel}>🏅 Profiles</Text>
@@ -50,43 +38,71 @@ export function HomeScreen({ profiles, selected, muted, onToggle, onCreate, onPr
         </Pressable>
       </View>
 
-      <Lighter size={110} />
+      <Lighter size={games.length > 0 ? 80 : 110} />
       <Text style={[common.title, styles.title]}>Pass The Lighter</Text>
-      <Text style={[common.muted, common.center]}>
-        One phone is the lighter. Pass it on, ask secret questions, and find out what everyone really thinks.
-      </Text>
 
-      <Text style={common.heading}>Who's playing?</Text>
-      <View style={styles.grid}>
-        {profiles.map((profile) => (
-          <Avatar
-            key={profile.id}
-            player={profile}
-            size={60}
-            selected={selected.includes(profile.id)}
-            dimmed={!selected.includes(profile.id)}
-            onPress={() => onToggle(profile.id)}
-          />
-        ))}
-        <Pressable accessibilityRole="button" onPress={() => setAdding(true)} style={styles.add}>
-          <View style={styles.addCircle}>
-            <Text style={styles.addPlus}>+</Text>
-          </View>
-          <Text style={styles.addLabel}>New player</Text>
-        </Pressable>
-      </View>
-      {profiles.length > 0 && <Text style={[common.muted, common.center]}>Tap players to add or remove them from this game.</Text>}
+      {games.length === 0 && (
+        <Text style={[common.muted, common.center]}>
+          One phone is the lighter. Pass it on, ask secret questions, and find out what everyone really thinks. Start
+          a new game to play.
+        </Text>
+      )}
 
-      <NewPlayerSheet
-        visible={adding}
-        takenNames={profiles.map((p) => p.name)}
-        onClose={() => setAdding(false)}
-        onSave={(profile) => {
-          setAdding(false);
-          onCreate(profile);
-        }}
-      />
+      {active.length > 0 && <Text style={common.heading}>Games in progress</Text>}
+      {active.map((game) => (
+        <GameCard key={game.id} game={game} onOpen={onOpen} />
+      ))}
+
+      {finished.length > 0 && <Text style={common.heading}>Finished games</Text>}
+      {finished.map((game) => (
+        <GameCard key={game.id} game={game} onOpen={onOpen} onDelete={onDelete} />
+      ))}
     </Screen>
+  );
+}
+
+function GameCard({ game, onOpen, onDelete }: { game: SavedGame; onOpen: (id: string) => void; onDelete?: (id: string) => void }) {
+  const { state } = game;
+  const finished = isFinished(state);
+  const date = new Date(game.updatedAt);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${finished ? 'Open the recap of' : 'Continue'} the game with ${state.players.map((p) => p.name).join(', ')}`}
+      onPress={() => onOpen(game.id)}
+      style={({ pressed }) => [common.card, styles.card, !finished && styles.activeCard, pressed && styles.pressed]}
+    >
+      <View style={styles.cardTop}>
+        <View style={styles.avatars}>
+          {state.players.map((p, i) => (
+            <View key={p.id} style={i > 0 && styles.overlap}>
+              <Avatar player={p} size={34} showName={false} />
+            </View>
+          ))}
+        </View>
+        {onDelete && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Remove this game"
+            onPress={() => onDelete(game.id)}
+            hitSlop={10}
+            style={styles.remove}
+          >
+            <Text style={styles.removeLabel}>✕</Text>
+          </Pressable>
+        )}
+      </View>
+      <Text style={styles.names} numberOfLines={1}>
+        {state.players.map((p) => p.name).join(' · ')}
+      </Text>
+      <View style={styles.cardBottom}>
+        <Text style={[styles.status, finished && styles.statusDone]}>{gameStatus(state)}</Text>
+        <Text style={common.muted}>
+          {date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}{' '}
+          {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -109,36 +125,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   title: {
-    fontSize: 42,
+    fontSize: 40,
   },
-  grid: {
+  card: {
+    gap: 8,
+  },
+  activeCard: {
+    borderColor: colors.flame,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  cardTop: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    justifyContent: 'center',
-  },
-  add: {
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 4,
   },
-  addCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatars: {
+    flexDirection: 'row',
   },
-  addPlus: {
-    fontFamily: fonts.display,
-    fontSize: 30,
+  overlap: {
+    marginLeft: -8,
+  },
+  remove: {
+    padding: 4,
+  },
+  removeLabel: {
+    fontSize: 16,
     color: colors.muted,
   },
-  addLabel: {
+  names: {
     fontFamily: fonts.bold,
-    fontSize: 13,
+    fontSize: 16,
+    color: colors.text,
+  },
+  cardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  status: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.flame,
+  },
+  statusDone: {
     color: colors.muted,
   },
 });

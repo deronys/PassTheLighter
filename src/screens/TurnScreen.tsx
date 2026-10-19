@@ -19,7 +19,10 @@ type Props = {
   onAnswerLast: (answer: number) => void;
 };
 
+// A turn has two steps: first pick who gets the lighter (the answer to the
+// question you were asked), then write the question for them.
 export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswerLast }: Props) {
+  const [step, setStep] = useState<'pick' | 'ask'>('pick');
   const [picked, setPicked] = useState<number | undefined>();
   const [question, setQuestion] = useState('');
 
@@ -28,10 +31,57 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
   const last = isLastTurn(state);
   const others = players.map((player, index) => ({ player, index })).filter((p) => p.index !== holder);
 
-  const pick = (index: number) => {
-    play('pop');
-    setPicked(index);
-  };
+  if (step === 'ask' && picked !== undefined) {
+    const target = players[picked];
+    return (
+      <Screen
+        footer={
+          <Button
+            label={`Pass to ${target.name} 🔥`}
+            sound="pass"
+            disabled={question.trim().length === 0}
+            onPress={() => onPass(picked, question)}
+          />
+        }
+      >
+        <Text style={styles.stepLabel}>Step 2 of 2</Text>
+        <PopIn>
+          <View style={[common.card, styles.target]}>
+            <Avatar player={target} size={56} showName={false} />
+            <View style={styles.targetText}>
+              <Text style={common.muted}>The lighter goes to</Text>
+              <Text style={common.heading}>{target.name}</Text>
+            </View>
+            <Pressable accessibilityRole="button" onPress={() => setStep('pick')} style={styles.change}>
+              <Text style={styles.changeLabel}>Change</Text>
+            </Pressable>
+          </View>
+        </PopIn>
+        <Text style={common.heading}>Your secret question for {target.name}</Text>
+        <Text style={common.muted}>Ask about the others in the group. They answer by passing the lighter on.</Text>
+        <TextInput
+          style={[common.input, styles.questionInput]}
+          value={question}
+          onChangeText={setQuestion}
+          placeholder="Who do you think…"
+          placeholderTextColor={colors.muted}
+          multiline
+          maxLength={200}
+        />
+        <View style={styles.suggestHeader}>
+          <Text style={common.muted}>Need an idea?</Text>
+          <Pressable accessibilityRole="button" onPress={onShuffle} style={styles.shuffle}>
+            <Text style={styles.shuffleLabel}>🎲 New ideas</Text>
+          </Pressable>
+        </View>
+        <View style={common.row}>
+          {suggestions.map((q) => (
+            <Chip key={q} label={q} selected={q === question} onPress={() => setQuestion(q)} />
+          ))}
+        </View>
+      </Screen>
+    );
+  }
 
   const footer = last ? (
     <Button
@@ -41,17 +91,13 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
       onPress={() => picked !== undefined && onAnswerLast(picked)}
     />
   ) : (
-    <Button
-      label={picked === undefined ? 'Pass the lighter' : `Pass to ${players[picked].name} 🔥`}
-      sound="pass"
-      disabled={picked === undefined || question.trim().length === 0}
-      onPress={() => picked !== undefined && onPass(picked, question)}
-    />
+    <Button label="Next: write your question" disabled={picked === undefined} onPress={() => setStep('ask')} />
   );
 
   return (
     <Screen footer={footer}>
       {top}
+      {!last && <Text style={styles.stepLabel}>Step 1 of 2</Text>}
 
       {incoming && (
         <PopIn>
@@ -80,48 +126,30 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
           <Avatar
             key={player.id}
             player={player}
-            size={58}
+            size={64}
             flames={state.receives[index]}
-            selected={picked === index}
+            checked={picked === index}
             dimmed={picked !== undefined && picked !== index}
-            onPress={() => pick(index)}
+            onPress={() => {
+              play('pop');
+              setPicked(index);
+            }}
           />
         ))}
       </View>
-
-      {!last && (
-        <>
-          <Text style={common.heading}>
-            {picked === undefined ? 'Your secret question' : `Your secret question for ${players[picked].name}`}
-          </Text>
-          <Text style={common.muted}>Ask about the others in the group. They answer by passing the lighter on.</Text>
-          <TextInput
-            style={[common.input, styles.questionInput]}
-            value={question}
-            onChangeText={setQuestion}
-            placeholder="Who do you think…"
-            placeholderTextColor={colors.muted}
-            multiline
-            maxLength={200}
-          />
-          <View style={styles.suggestHeader}>
-            <Text style={common.muted}>Need an idea?</Text>
-            <Pressable accessibilityRole="button" onPress={onShuffle} style={styles.shuffle}>
-              <Text style={styles.shuffleLabel}>🎲 New ideas</Text>
-            </Pressable>
-          </View>
-          <View style={common.row}>
-            {suggestions.map((q) => (
-              <Chip key={q} label={q} selected={q === question} onPress={() => setQuestion(q)} />
-            ))}
-          </View>
-        </>
-      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  stepLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.muted,
+    textAlign: 'center',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
   questionCard: {
     borderColor: colors.flame,
     borderWidth: 2,
@@ -150,8 +178,27 @@ const styles = StyleSheet.create({
   players: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 18,
     justifyContent: 'center',
+  },
+  target: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  targetText: {
+    flex: 1,
+  },
+  change: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceStrong,
+  },
+  changeLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
   },
   questionInput: {
     minHeight: 88,

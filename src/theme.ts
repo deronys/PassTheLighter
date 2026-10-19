@@ -14,6 +14,8 @@ export const colors = {
   ember: '#FFD86B',
   onFlame: '#2B1300',
   gold: '#FFD34D',
+  // A confirmed choice, such as a vote.
+  pick: '#4CDB7A',
 };
 
 export const fonts = {

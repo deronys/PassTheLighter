@@ -2,6 +2,16 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.4.0 - 2026-10-19
+
+From John's "Improvements V2" list (the items that work on one shared phone).
+
+- Several games at once: the home screen lists games in progress with their status (whose turn, voting, finished) and finished games with their recap. Games are saved on the phone after every move.
+- A home button at the top left of every game screen. Leaving mid-turn or mid-vote hides the screen again, so the game resumes with a hand-off.
+- A lighter counter at the top right of every game screen shows how many times the current holder has had the lighter (out of 3) and opens the full history. During the game it shows who passed to whom; after the game it also shows every question and answer.
+- The turn is now two steps: first pick who gets the lighter (your answer), then write the question for them.
+- Voting: picked players get a green ring and a tick, and a button opens the full history with all questions and answers.
+
 ## v0.3.0 - 2026-10-19
 
 From John's "Improvements V1" list.

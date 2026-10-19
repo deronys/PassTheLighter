@@ -170,3 +170,37 @@ export function castVotes(state: GameState, picks: Record<string, number>): Game
 export function finishCeremony(state: GameState): GameState {
   return { ...state, phase: 'final' };
 }
+
+// A game picked up again from the home screen never opens on a private screen:
+// the phone is handed to the right player first.
+export function resumeState(state: GameState): GameState {
+  if (state.phase === 'turn') return { ...state, phase: 'handoff' };
+  if (state.phase === 'vote') return { ...state, phase: 'vote-handoff' };
+  return state;
+}
+
+// One line describing where a game is, for the list of games on the home screen.
+export function gameStatus(state: GameState): string {
+  const holder = state.players[state.holder].name;
+  switch (state.phase) {
+    case 'handoff':
+    case 'turn':
+      return state.passes.length === 0
+        ? `Starting with ${holder}`
+        : `${holder} has the lighter · ${state.passes.length} ${state.passes.length === 1 ? 'pass' : 'passes'}`;
+    case 'gameover':
+    case 'recap':
+      return 'Game over · secrets revealed';
+    case 'vote-handoff':
+    case 'vote':
+      return `Voting · ${state.voter} of ${state.players.length} voted`;
+    case 'ceremony':
+      return 'Awards ceremony';
+    case 'final':
+      return 'Finished';
+  }
+}
+
+export function isFinished(state: GameState): boolean {
+  return state.phase === 'final';
+}

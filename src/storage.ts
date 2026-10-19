@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { QUESTIONS } from './data/questions';
 import { type Deck, newDeck } from './deck';
+import type { SavedGame } from './games';
 import type { Profile } from './profiles';
 
 const KEYS = {
@@ -42,3 +43,7 @@ export async function loadSaved(): Promise<Saved> {
 export const saveProfiles = (profiles: Profile[]) => write(KEYS.profiles, profiles);
 export const saveDeck = (deck: Deck) => write(KEYS.deck, deck);
 export const saveMuted = (muted: boolean) => write(KEYS.muted, muted);
+
+const GAMES_KEY = 'ptl.games.v1';
+export const loadGames = () => read<SavedGame[]>(GAMES_KEY, []);
+export const saveGames = (games: SavedGame[]) => write(GAMES_KEY, games);

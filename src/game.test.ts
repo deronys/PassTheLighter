@@ -12,6 +12,8 @@ import {
   beginTurn,
   beginVote,
   canStart,
+  gameStatus,
+  resumeState,
   castVotes,
   incomingPass,
   isLastTurn,
@@ -21,6 +23,7 @@ import {
   startGame,
   startVoting,
 } from './game.ts';
+import { FINISHED_TO_KEEP, type SavedGame, newSavedGame, removeGame, upsertGame } from './games.ts';
 import { recordGame } from './profiles.ts';
 import { awardResults, pickVotedCategories, playerStats } from './results.ts';
 
@@ -160,4 +163,37 @@ test('finished games add up in player profiles and unlock achievements', () => {
   assert.equal(second.profiles.length, 4);
   assert.equal(second.profiles.find((p) => p.id === 'p1')!.stats.games, 2);
   assert.deepEqual(second.unlocked[1], []);
+});
+
+test('resuming a game hides private screens behind a hand-off', () => {
+  const turn = beginTurn(startGame(PLAYERS, 2));
+  assert.equal(resumeState(turn).phase, 'handoff');
+  const voting = beginVote(startVoting(showRecap(finishedGame()), ['mvp']));
+  assert.equal(resumeState(voting).phase, 'vote-handoff');
+  assert.equal(resumeState(finishedGame()).phase, 'gameover');
+});
+
+test('game status describes each stage for the home screen', () => {
+  let game = startGame(PLAYERS, 2);
+  assert.equal(gameStatus(game), 'Starting with Chris');
+  game = passLighter(beginTurn(game), 0, 'Q');
+  assert.equal(gameStatus(game), 'Anna has the lighter · 1 pass');
+  game = startVoting(showRecap(finishedGame()), ['mvp']);
+  game = castVotes(beginVote(game), { mvp: 1 });
+  assert.equal(gameStatus(game), 'Voting · 1 of 4 voted');
+});
+
+test('saved games list keeps games in progress first and trims old finished games', () => {
+  const active = { ...newSavedGame(startGame(PLAYERS, 0), 1), id: 'active' };
+  let games: SavedGame[] = [active];
+  const finished = { ...finishedGame(), phase: 'final' as const };
+  for (let i = 0; i < FINISHED_TO_KEEP + 3; i++) {
+    games = upsertGame(games, { ...newSavedGame(finished, 100 + i), id: `done${i}` });
+  }
+  assert.equal(games[0].id, 'active');
+  assert.equal(games.length, FINISHED_TO_KEEP + 1);
+  assert.equal(games[1].id, `done${FINISHED_TO_KEEP + 2}`);
+  games = upsertGame(games, { ...active, updatedAt: 999, state: passLighter(beginTurn(active.state), 1, 'Q') });
+  assert.equal(games.filter((g) => g.id === 'active').length, 1);
+  assert.equal(removeGame(games, 'active').length, FINISHED_TO_KEEP);
 });

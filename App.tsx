@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { GameHeader } from './src/components/GameHeader';
 import { HistorySheet } from './src/components/HistorySheet';
 import { PlayerBar } from './src/components/PlayerBar';
 import { QUESTIONS } from './src/data/questions';
@@ -23,47 +24,46 @@ import {
   react,
   showRecap,
   startGame,
+  resumeState,
   startVoting,
+  type Player,
 } from './src/game';
+import { type SavedGame, newSavedGame, removeGame, sortGames, upsertGame } from './src/games';
 import { type Profile, recordGame } from './src/profiles';
-import { type AwardResult, type PlayerStats, awardResults, pickVotedCategories, playerStats } from './src/results';
+import { awardResults, pickVotedCategories, playerStats } from './src/results';
 import { CeremonyScreen } from './src/screens/CeremonyScreen';
 import { FinalScreen } from './src/screens/FinalScreen';
 import { GameOverScreen } from './src/screens/GameOverScreen';
 import { HandoffScreen } from './src/screens/HandoffScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { NewGameScreen } from './src/screens/NewGameScreen';
 import { ProfilesScreen } from './src/screens/ProfilesScreen';
 import { RecapScreen } from './src/screens/RecapScreen';
 import { TurnScreen } from './src/screens/TurnScreen';
 import { VoteScreen } from './src/screens/VoteScreen';
-import { loadSaved, saveDeck, saveMuted, saveProfiles } from './src/storage';
+import { loadGames, loadSaved, saveDeck, saveGames, saveMuted, saveProfiles } from './src/storage';
 import { colors } from './src/theme';
 
 const SUGGESTIONS_PER_TURN = 5;
-
-type Outcome = {
-  results: AwardResult[];
-  stats: PlayerStats[];
-  unlocked: string[][];
-};
 
 export default function App() {
   const [fontsLoaded] = useFonts({ LuckiestGuy_400Regular, Nunito_600SemiBold, Nunito_800ExtraBold });
   const [loaded, setLoaded] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [games, setGames] = useState<SavedGame[]>([]);
   const [muted, setMutedState] = useState(false);
   const deck = useRef<Deck>(newDeck(QUESTIONS.length));
 
-  const [view, setView] = useState<'home' | 'profiles' | 'game'>('home');
+  const [view, setView] = useState<'home' | 'new' | 'profiles' | 'game'>('home');
   const [selected, setSelected] = useState<string[]>([]);
-  const [game, setGame] = useState<GameState | null>(null);
+  const [currentId, setCurrentId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
-    loadSaved().then((saved) => {
+    Promise.all([loadSaved(), loadGames()]).then(([saved, savedGames]) => {
       setProfiles(saved.profiles);
+      setGames(sortGames(savedGames));
       deck.current = saved.deck;
       setMutedState(saved.muted);
       setMuted(saved.muted);
@@ -71,9 +71,23 @@ export default function App() {
     });
   }, []);
 
+  const current = games.find((g) => g.id === currentId) ?? null;
+
   const updateProfiles = (next: Profile[]) => {
     setProfiles(next);
     saveProfiles(next);
+  };
+
+  const storeGame = (game: SavedGame) => {
+    setGames((list) => {
+      const next = upsertGame(list, game);
+      saveGames(next);
+      return next;
+    });
+  };
+
+  const setGame = (state: GameState, unlocked: string[][] | null = current?.unlocked ?? null) => {
+    if (current) storeGame({ ...current, state, unlocked, updatedAt: Date.now() });
   };
 
   const drawSuggestions = () => {
@@ -83,14 +97,38 @@ export default function App() {
     setSuggestions(result.picks.map((i) => QUESTIONS[i]));
   };
 
-  const start = (ids: string[]) => {
-    const players = ids
-      .map((id) => profiles.find((p) => p.id === id))
-      .filter((p): p is Profile => p !== undefined)
-      .map(({ id, name, avatar, color }) => ({ id, name, avatar, color }));
-    setOutcome(null);
-    setGame(startGame(players, Math.floor(Math.random() * players.length)));
+  const start = (players: Player[]) => {
+    const saved = newSavedGame(startGame(players, Math.floor(Math.random() * players.length)));
+    storeGame(saved);
+    setCurrentId(saved.id);
     setView('game');
+  };
+
+  const startWithProfiles = (ids: string[]) =>
+    start(
+      ids
+        .map((id) => profiles.find((p) => p.id === id))
+        .filter((p): p is Profile => p !== undefined)
+        .map(({ id, name, avatar, color }) => ({ id, name, avatar, color })),
+    );
+
+  const open = (id: string) => {
+    const game = games.find((g) => g.id === id);
+    if (!game) return;
+    const resumed = resumeState(game.state);
+    if (resumed !== game.state) storeGame({ ...game, state: resumed });
+    setCurrentId(id);
+    setView('game');
+  };
+
+  const goHome = () => {
+    setHistoryOpen(false);
+    if (current) {
+      const resumed = resumeState(current.state);
+      if (resumed !== current.state) setGame(resumed);
+    }
+    setCurrentId(null);
+    setView('home');
   };
 
   const toggleMute = () => {
@@ -101,14 +139,10 @@ export default function App() {
 
   const vote = (state: GameState, picks: Record<string, number>) => {
     const next = castVotes(state, picks);
-    if (next.phase === 'ceremony') {
-      const results = awardResults(next);
-      const stats = playerStats(next);
-      const update = recordGame(profiles, next, stats, results);
-      updateProfiles(update.profiles);
-      setOutcome({ results, stats, unlocked: update.unlocked });
-    }
-    setGame(next);
+    if (next.phase !== 'ceremony') return setGame(next);
+    const update = recordGame(profiles, next, playerStats(next), awardResults(next));
+    updateProfiles(update.profiles);
+    setGame(next, update.unlocked);
   };
 
   if (!fontsLoaded || !loaded) {
@@ -118,30 +152,48 @@ export default function App() {
   let screen;
   if (view === 'profiles') {
     screen = <ProfilesScreen profiles={profiles} onBack={() => setView('home')} />;
-  } else if (view === 'home' || !game) {
+  } else if (view === 'new') {
     screen = (
-      <HomeScreen
+      <NewGameScreen
         profiles={profiles}
         selected={selected}
-        muted={muted}
         onToggle={(id) => setSelected(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id])}
         onCreate={(profile) => {
           updateProfiles([...profiles, profile]);
           setSelected([...selected, profile.id]);
         }}
+        onBack={() => setView('home')}
+        onStart={() => startWithProfiles(selected)}
+      />
+    );
+  } else if (view === 'home' || !current) {
+    screen = (
+      <HomeScreen
+        games={games}
+        muted={muted}
+        onOpen={open}
+        onDelete={(id) =>
+          setGames((list) => {
+            const next = removeGame(list, id);
+            saveGames(next);
+            return next;
+          })
+        }
+        onNewGame={() => setView('new')}
         onProfiles={() => setView('profiles')}
         onMute={toggleMute}
-        onStart={() => start(selected)}
       />
     );
   } else {
-    const bar = <PlayerBar state={game} onHistory={() => setHistoryOpen(true)} />;
+    const game = current.state;
+    const bar = <PlayerBar state={game} />;
     const comment = (i: number, author: number, text: string) => setGame(addComment(game, i, author, text));
     const reactTo = (i: number, emoji: string) => setGame(react(game, i, emoji));
+    let inner;
 
     switch (game.phase) {
       case 'handoff':
-        screen = (
+        inner = (
           <HandoffScreen
             player={game.players[game.holder]}
             lead={game.passes.length === 0 ? 'The lighter starts with' : 'Pass the lighter to'}
@@ -154,10 +206,10 @@ export default function App() {
         );
         break;
       case 'turn':
-        screen = (
+        inner = (
           <TurnScreen
             // A fresh key per turn clears the previous player's picks.
-            key={game.passes.length}
+            key={`${current.id}-${game.passes.length}`}
             state={game}
             suggestions={suggestions}
             top={bar}
@@ -168,10 +220,10 @@ export default function App() {
         );
         break;
       case 'gameover':
-        screen = <GameOverScreen state={game} onReveal={() => setGame(showRecap(game))} />;
+        inner = <GameOverScreen state={game} onReveal={() => setGame(showRecap(game))} />;
         break;
       case 'recap':
-        screen = (
+        inner = (
           <RecapScreen
             state={game}
             onComment={comment}
@@ -181,7 +233,7 @@ export default function App() {
         );
         break;
       case 'vote-handoff':
-        screen = (
+        inner = (
           <HandoffScreen
             player={game.players[game.voter]}
             lead={`Voter ${game.voter + 1} of ${game.players.length}`}
@@ -190,31 +242,42 @@ export default function App() {
         );
         break;
       case 'vote':
-        screen = <VoteScreen key={game.voter} state={game} onSubmit={(picks) => vote(game, picks)} />;
+        inner = (
+          <VoteScreen
+            key={`${current.id}-${game.voter}`}
+            state={game}
+            onHistory={() => setHistoryOpen(true)}
+            onSubmit={(picks) => vote(game, picks)}
+          />
+        );
         break;
       case 'ceremony':
-        screen = outcome && (
-          <CeremonyScreen state={game} results={outcome.results} onDone={() => setGame(finishCeremony(game))} />
+        inner = (
+          <CeremonyScreen state={game} results={awardResults(game)} onDone={() => setGame(finishCeremony(game))} />
         );
         break;
       case 'final':
-        screen = outcome && (
+        inner = (
           <FinalScreen
             state={game}
-            results={outcome.results}
+            results={awardResults(game)}
             stats={playerStats(game)}
-            unlocked={outcome.unlocked}
+            unlocked={current.unlocked ?? []}
             onComment={comment}
             onReact={reactTo}
-            onPlayAgain={() => start(game.players.map((p) => p.id))}
-            onHome={() => {
-              setGame(null);
-              setView('home');
-            }}
+            onPlayAgain={() => start(game.players)}
+            onHome={goHome}
           />
         );
         break;
     }
+    screen = (
+      <View style={styles.fill}>
+        <GameHeader state={game} onHome={goHome} onHistory={() => setHistoryOpen(true)} />
+        {inner}
+        <HistorySheet state={game} visible={historyOpen} onClose={() => setHistoryOpen(false)} />
+      </View>
+    );
   }
 
   return (
@@ -223,7 +286,6 @@ export default function App() {
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {screen}
         </KeyboardAvoidingView>
-        {game && <HistorySheet state={game} visible={historyOpen} onClose={() => setHistoryOpen(false)} />}
       </SafeAreaView>
       <StatusBar style="light" />
     </SafeAreaProvider>

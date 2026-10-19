@@ -11,12 +11,14 @@ type Props = {
   flames?: number;
   highlighted?: boolean;
   selected?: boolean;
+  // A green ring and tick, for a confirmed pick.
+  checked?: boolean;
   dimmed?: boolean;
   showName?: boolean;
   onPress?: () => void;
 };
 
-export function Avatar({ player, size = 64, flames, highlighted, selected, dimmed, showName = true, onPress }: Props) {
+export function Avatar({ player, size = 64, flames, highlighted, selected, checked, dimmed, showName = true, onPress }: Props) {
   const glow = useRef(new Animated.Value(0)).current;
   const pop = useRef(new Animated.Value(1)).current;
 
@@ -33,12 +35,12 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, dimme
   }, [highlighted, glow]);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected && !checked) return;
     pop.setValue(0.8);
     Animated.spring(pop, { toValue: 1, useNativeDriver: nativeDriver, bounciness: 18 }).start();
-  }, [selected, pop]);
+  }, [selected, checked, pop]);
 
-  const ring = selected ? colors.flame : player.color;
+  const ring = checked ? colors.pick : selected ? colors.flame : player.color;
   const content = (
     <Animated.View style={[styles.wrap, dimmed && styles.dimmed, { transform: [{ scale: pop }] }]}>
       <View>
@@ -58,13 +60,18 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, dimme
               height: size,
               borderRadius: size / 2,
               borderColor: ring,
-              borderWidth: selected ? 4 : 3,
+              borderWidth: selected || checked ? 4 : 3,
               backgroundColor: player.color + '33',
             },
           ]}
         >
           <Text style={{ fontSize: size * 0.5 }}>{player.avatar}</Text>
         </View>
+        {checked && (
+          <View style={[styles.tick, { width: size * 0.4, height: size * 0.4, borderRadius: size * 0.2 }]}>
+            <Text style={[styles.tickMark, { fontSize: size * 0.24 }]}>✓</Text>
+          </View>
+        )}
       </View>
       {showName && (
         <Text style={[styles.name, { maxWidth: size + 28 }]} numberOfLines={1}>
@@ -81,7 +88,7 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, dimme
 
   if (!onPress) return content;
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={player.name} onPress={onPress}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: selected || checked }} accessibilityLabel={player.name} onPress={onPress}>
       {content}
     </Pressable>
   );
@@ -104,6 +111,20 @@ const styles = StyleSheet.create({
   circle: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tick: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    backgroundColor: colors.pick,
+    borderWidth: 2,
+    borderColor: colors.night,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tickMark: {
+    fontFamily: fonts.bold,
+    color: colors.night,
   },
   name: {
     fontFamily: fonts.bold,
