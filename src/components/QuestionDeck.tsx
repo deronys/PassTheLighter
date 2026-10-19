@@ -19,8 +19,8 @@ type Props = {
   // Question indexes dealt for this turn.
   cards: number[];
   onDeal: () => void;
-  // Called with the top card's question when the player picks it.
-  onUse: (question: string) => void;
+  // Called with the top card's question index when the player picks it.
+  onUse: (questionIndex: number) => void;
 };
 
 const SWIPE_DISTANCE = 70;
@@ -59,7 +59,7 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
   const use = () => {
     if (cards.length === 0) return;
     play('pop');
-    onUse(QUESTIONS[cards[top]]);
+    onUse(cards[top]);
   };
 
   const flipRef = useRef(flip);

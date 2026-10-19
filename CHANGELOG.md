@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.5.2 - 2026-10-19
+
+- The box where you write your question now looks like a question card too: same shape, gradient, card font and corner emoji. It is orange with a ✏️ while you write your own; when you copy an idea card it takes that card's colour and category until you change the text.
+
 ## v0.5.1 - 2026-10-19
 
 - Writing your own question is now the main option: a big "Write it your way" card at the top of the question step.

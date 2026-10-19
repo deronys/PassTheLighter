@@ -6,10 +6,14 @@ import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { PopIn } from '../components/PopIn';
 import { QuestionDeck } from '../components/QuestionDeck';
+import { QUESTIONS, type QuestionCategory, categoryOf } from '../data/questions';
 import { Screen } from '../components/Screen';
 import { play } from '../feedback';
 import { type GameState, incomingPass, isLastTurn } from '../game';
 import { colors, common, fonts } from '../theme';
+
+// The look of your own card until you copy a question from an idea card.
+const OWN_CARD: QuestionCategory = { name: 'Your question', emoji: '✏️', colors: ['#FF8A3D', '#E0442B'] };
 
 type Props = {
   state: GameState;
@@ -27,6 +31,8 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
   const [step, setStep] = useState<'pick' | 'ask'>('pick');
   const [picked, setPicked] = useState<number | undefined>();
   const [question, setQuestion] = useState('');
+  // The idea card the question was copied from, while it is unchanged.
+  const [fromCard, setFromCard] = useState<number | undefined>();
 
   const { players, holder } = state;
   const incoming = incomingPass(state);
@@ -35,6 +41,7 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
 
   if (step === 'ask' && picked !== undefined) {
     const target = players[picked];
+    const card = fromCard !== undefined && question === QUESTIONS[fromCard] ? categoryOf(fromCard) : OWN_CARD;
     return (
       <Screen
         footer={
@@ -60,25 +67,31 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
             <Text style={styles.changeIcon}>↺</Text>
           </Pressable>
         </View>
-        <LinearGradient colors={['#4A3A6E', '#2A2045']} style={styles.ownCard}>
+        <LinearGradient colors={card.colors} style={styles.ownCard}>
           <View style={styles.ownTop}>
-            <Text style={styles.ownEmoji}>✏️</Text>
-            <Text style={styles.ownKicker}>Write it your way</Text>
+            <Text style={styles.ownEmoji}>{card.emoji}</Text>
+            <Text style={styles.ownKicker}>{card === OWN_CARD ? card.name : `${card.name} · your question`}</Text>
           </View>
           <TextInput
             style={styles.ownInput}
             value={question}
             onChangeText={setQuestion}
             placeholder={`Ask ${target.name} anything…`}
-            placeholderTextColor="rgba(255,255,255,0.5)"
+            placeholderTextColor="rgba(255,255,255,0.6)"
             multiline
             maxLength={140}
           />
-          <Text style={styles.ownCount}>{question.length}/140</Text>
+          <View style={styles.ownBottom}>
+            <Text style={styles.ownCount}>{question.length}/140</Text>
+            <Text style={styles.ownBigEmoji}>{card.emoji}</Text>
+          </View>
         </LinearGradient>
 
         <Text style={styles.ideasLabel}>💡 Stuck? Grab an idea</Text>
-        <QuestionDeck cards={suggestions} onDeal={onShuffle} onUse={setQuestion} />
+        <QuestionDeck cards={suggestions} onDeal={onShuffle} onUse={(index) => {
+            setFromCard(index);
+            setQuestion(QUESTIONS[index]);
+          }} />
       </Screen>
     );
   }
@@ -182,15 +195,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ownCard: {
-    borderRadius: 24,
+    minHeight: 200,
+    borderRadius: 22,
     padding: 16,
     gap: 8,
     borderWidth: 3,
-    borderColor: colors.flame,
-    shadowColor: colors.flame,
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 6,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
   ownTop: {
     flexDirection: 'row',
@@ -198,31 +213,42 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ownEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   ownKicker: {
     fontFamily: fonts.display,
-    fontSize: 14,
+    fontSize: 13,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: colors.flame,
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   ownInput: {
+    flex: 1,
     minHeight: 96,
-    fontFamily: fonts.bold,
-    fontSize: 22,
-    lineHeight: 28,
-    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: 24,
+    lineHeight: 30,
+    color: '#FFFFFF',
     textAlignVertical: 'top',
-    borderRadius: 14,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowRadius: 6,
+    padding: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
+  },
+  ownBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   ownCount: {
-    alignSelf: 'flex-end',
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: colors.muted,
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
+  ownBigEmoji: {
+    fontSize: 34,
+    opacity: 0.5,
   },
   ideasLabel: {
     fontFamily: fonts.bold,
