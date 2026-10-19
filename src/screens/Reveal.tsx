@@ -10,7 +10,7 @@ import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
-import { useFlames } from './Lobby';
+import { AdBanner, useFlames } from './Lobby';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -207,6 +207,7 @@ export function GameProgress({ id }: { id: string }) {
           </View>
         );
       })}
+      <AdBanner />
     </Screen>
   );
 }

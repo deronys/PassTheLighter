@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.8.2 - 2026-10-19
+
+- The ad banner is back on Game Progress (John wants to keep it).
+
 ## v0.8.1 - 2026-10-19
 
 - Removed the ad banner from Game Progress. It was not in the design; the banner stays only on the Game List, where the design has it.
