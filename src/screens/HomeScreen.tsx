@@ -26,7 +26,7 @@ export function HomeScreen({ games, muted, onOpen, onDelete, onNewGame, onProfil
     <Screen footer={<Button label="New game" sound="flick" onPress={onNewGame} />}>
       <View style={styles.topRow}>
         <Pressable accessibilityRole="button" onPress={onProfiles} style={styles.pill}>
-          <Text style={styles.pillLabel}>🏅 Profiles</Text>
+          <Text style={styles.pillLabel}>Profiles</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"

@@ -16,7 +16,8 @@ type Props = {
 
 export function NewPlayerSheet({ visible, takenNames, onClose, onSave }: Props) {
   const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState(AVATARS[0]);
+  // Avatars show initials; the emoji is still saved for older versions.
+  const avatar = AVATARS[0];
   const [color, setColor] = useState(PLAYER_COLORS[0]);
 
   const trimmed = name.trim();
@@ -26,7 +27,6 @@ export function NewPlayerSheet({ visible, takenNames, onClose, onSave }: Props) 
   const save = () => {
     onSave(newProfile({ ...preview, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }));
     setName('');
-    setAvatar(AVATARS[Math.floor(Math.random() * AVATARS.length)]);
     setColor(PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)]);
   };
 
@@ -48,21 +48,7 @@ export function NewPlayerSheet({ visible, takenNames, onClose, onSave }: Props) 
             maxLength={16}
           />
           {taken && <Text style={common.muted}>Someone already has that name.</Text>}
-          <Text style={common.heading}>Pick an avatar</Text>
-          <View style={styles.grid}>
-            {AVATARS.map((a) => (
-              <Pressable
-                key={a}
-                accessibilityRole="button"
-                accessibilityState={{ selected: a === avatar }}
-                onPress={() => setAvatar(a)}
-                style={[styles.avatarOption, a === avatar && styles.optionSelected]}
-              >
-                <Text style={styles.avatarEmoji}>{a}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text style={common.heading}>Pick a colour</Text>
+          <Text style={common.label}>Your colour</Text>
           <View style={styles.grid}>
             {PLAYER_COLORS.map((c) => (
               <Pressable
@@ -109,20 +95,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  avatarOption: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  optionSelected: {
-    backgroundColor: colors.flame,
-  },
-  avatarEmoji: {
-    fontSize: 26,
-  },
+
   swatch: {
     width: 36,
     height: 36,

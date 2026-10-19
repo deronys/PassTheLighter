@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Flame } from './Lighter';
+
 import { type GameState, RECEIVES_TO_END } from '../game';
 import { colors, fonts } from '../theme';
 
@@ -21,7 +23,7 @@ export function GameHeader({ state, onHome, onHistory }: Props) {
   return (
     <View style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Home" onPress={onHome} style={styles.button}>
-        <Text style={styles.icon}>🏠</Text>
+        <Text style={styles.homeLabel}>‹  Games</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -33,8 +35,17 @@ export function GameHeader({ state, onHome, onHistory }: Props) {
         onPress={onHistory}
         style={[styles.button, styles.counter]}
       >
-        <Text style={styles.icon}>{playing ? '🔥' : '📜'}</Text>
-        <Text style={styles.count}>{playing ? `${count}/${RECEIVES_TO_END}` : state.passes.length}</Text>
+        {playing ? (
+          <>
+            <Flame size={16} />
+            <Text style={styles.count}>
+              {count}
+              <Text style={styles.countOf}>/{RECEIVES_TO_END}</Text>
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.homeLabel}>History</Text>
+        )}
       </Pressable>
     </View>
   );
@@ -48,13 +59,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
-    backgroundColor: colors.dusk,
   },
   button: {
     minWidth: 44,
-    height: 44,
-    paddingHorizontal: 12,
-    borderRadius: 22,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     backgroundColor: colors.surfaceStrong,
     borderWidth: 1,
     borderColor: colors.border,
@@ -65,13 +75,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  icon: {
-    fontSize: 20,
+  homeLabel: {
+    fontFamily: fonts.semi,
+    fontSize: 14,
+    color: colors.text,
   },
   count: {
     fontFamily: fonts.display,
-    fontSize: 18,
-    color: colors.flame,
+    fontSize: 15,
+    color: colors.text,
     fontVariant: ['tabular-nums'],
+  },
+  countOf: {
+    color: colors.muted,
   },
 });

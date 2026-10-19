@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Player } from '../game';
+import { type Player, RECEIVES_TO_END } from '../game';
 import { colors, fonts, nativeDriver } from '../theme';
 
 type Props = {
   player: Player;
   size?: number;
-  // Shows a little flame for each time the player got the lighter.
+  // Shows a pip for each time the player got the lighter, out of three.
   flames?: number;
   highlighted?: boolean;
   selected?: boolean;
@@ -40,7 +41,8 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, check
     Animated.spring(pop, { toValue: 1, useNativeDriver: nativeDriver, bounciness: 18 }).start();
   }, [selected, checked, pop]);
 
-  const ring = checked ? colors.pick : selected ? colors.flame : player.color;
+  const ring = checked ? colors.pick : selected ? colors.flame : undefined;
+  const ringWidth = Math.max(2, Math.round(size / 24));
   const content = (
     <Animated.View style={[styles.wrap, dimmed && styles.dimmed, { transform: [{ scale: pop }] }]}>
       <View>
@@ -48,24 +50,30 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, check
           <Animated.View
             style={[
               styles.glow,
-              { width: size + 16, height: size + 16, borderRadius: (size + 16) / 2, opacity: glow },
+              { width: size + ringWidth * 2 + 20, height: size + ringWidth * 2 + 20, borderRadius: size, opacity: glow },
             ]}
           />
         )}
         <View
           style={[
-            styles.circle,
+            styles.ring,
             {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              borderColor: ring,
-              borderWidth: selected || checked ? 4 : 3,
-              backgroundColor: player.color + '33',
+              padding: ringWidth,
+              borderRadius: size / 2 + ringWidth * 2,
+              borderColor: ring ?? 'transparent',
             },
           ]}
         >
-          <Text style={{ fontSize: size * 0.5 }}>{player.avatar}</Text>
+          <LinearGradient
+            colors={[player.color, shade(player.color)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}
+          >
+            <Text style={[styles.initials, { fontSize: size * 0.36, color: isLight(player.color) ? colors.night : '#FFFFFF' }]}>
+              {initials(player.name)}
+            </Text>
+          </LinearGradient>
         </View>
         {checked && (
           <View style={[styles.tick, { width: size * 0.4, height: size * 0.4, borderRadius: size * 0.2 }]}>
@@ -79,9 +87,11 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, check
         </Text>
       )}
       {flames !== undefined && (
-        <Text style={styles.flames} accessibilityLabel={`Got the lighter ${flames} times`}>
-          {flames > 0 ? '🔥'.repeat(flames) : '·'}
-        </Text>
+        <View style={styles.pips} accessibilityLabel={`Got the lighter ${flames} times`}>
+          {Array.from({ length: RECEIVES_TO_END }, (_, i) => (
+            <View key={i} style={[styles.pip, i < flames && styles.pipLit]} />
+          ))}
+        </View>
       )}
     </Animated.View>
   );
@@ -92,6 +102,27 @@ export function Avatar({ player, size = 64, flames, highlighted, selected, check
       {content}
     </Pressable>
   );
+}
+
+// Up to two letters: the first of the first two words.
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? '?').slice(0, 1)).toUpperCase();
+}
+
+function channels(hex: string): number[] {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+
+// A darker version of a colour, for the far end of the avatar's gradient.
+function shade(hex: string): string {
+  return '#' + channels(hex).map((c) => Math.round(c * 0.55).toString(16).padStart(2, '0')).join('');
+}
+
+function isLight(hex: string): boolean {
+  const [r, g, b] = channels(hex);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 170;
 }
 
 const styles = StyleSheet.create({
@@ -106,7 +137,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     left: -8,
-    backgroundColor: 'rgba(255, 177, 59, 0.45)',
+    backgroundColor: 'rgba(255, 45, 111, 0.4)',
+  },
+  ring: {
+    borderWidth: 2,
+  },
+  initials: {
+    fontFamily: fonts.display,
+    letterSpacing: -0.5,
   },
   circle: {
     alignItems: 'center',
@@ -127,13 +165,22 @@ const styles = StyleSheet.create({
     color: colors.night,
   },
   name: {
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semi,
     fontSize: 13,
     color: colors.text,
   },
-  flames: {
-    fontSize: 11,
-    minHeight: 14,
-    color: colors.muted,
+  pips: {
+    flexDirection: 'row',
+    gap: 3,
+    height: 4,
+  },
+  pip: {
+    width: 10,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.surfaceStrong,
+  },
+  pipLit: {
+    backgroundColor: colors.flame,
   },
 });

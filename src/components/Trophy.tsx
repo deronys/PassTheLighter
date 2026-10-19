@@ -1,18 +1,26 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from '../theme';
+import { colors, flameGradient, fonts } from '../theme';
 
-// A digital trophy with the award's emoji on a gold cup.
+// The award as a glowing badge: the category emoji in a gradient ring.
 export function Trophy({ emoji, size = 120 }: { emoji: string; size?: number }) {
   return (
     <View style={styles.wrap}>
-      <View style={[styles.cup, { width: size, height: size * 0.85, borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2 }]}>
-        <Text style={{ fontSize: size * 0.42 }}>{emoji}</Text>
-      </View>
-      <View style={[styles.stem, { width: size * 0.16, height: size * 0.18 }]} />
-      <View style={[styles.base, { width: size * 0.7, height: size * 0.16 }]}>
-        <Text style={styles.plate}>WINNER</Text>
-      </View>
+      <View style={[styles.glow, { width: size * 1.5, height: size * 1.5, borderRadius: size * 0.75 }]} />
+      <LinearGradient
+        colors={[colors.gold, colors.flame, colors.flameHot]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ width: size, height: size, borderRadius: size / 2, padding: 4 }}
+      >
+        <View style={[styles.inner, { borderRadius: size / 2 }]}>
+          <Text style={{ fontSize: size * 0.42 }}>{emoji}</Text>
+        </View>
+      </LinearGradient>
+      <LinearGradient colors={flameGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.plate}>
+        <Text style={styles.plateLabel}>WINNER</Text>
+      </LinearGradient>
     </View>
   );
 }
@@ -20,29 +28,29 @@ export function Trophy({ emoji, size = 120 }: { emoji: string; size?: number }) 
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  cup: {
-    backgroundColor: colors.gold,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+  glow: {
+    position: 'absolute',
+    top: '-15%',
+    backgroundColor: 'rgba(255, 106, 43, 0.18)',
+  },
+  inner: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#F2A900',
-  },
-  stem: {
-    backgroundColor: '#F2A900',
-  },
-  base: {
-    backgroundColor: '#7A4B12',
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.dusk,
   },
   plate: {
+    marginTop: -12,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  plateLabel: {
     fontFamily: fonts.display,
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 2,
-    color: colors.gold,
+    color: '#FFFFFF',
   },
 });

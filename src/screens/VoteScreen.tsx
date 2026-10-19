@@ -33,7 +33,7 @@ export function VoteScreen({ state, onHistory, onSubmit }: Props) {
     >
       <Text style={common.title}>Your votes</Text>
       <Text style={[common.muted, common.center]}>
-        {players[voter].avatar} {players[voter].name}, vote in secret. You can't vote for yourself.
+        {players[voter].name}, vote in secret. You can't vote for yourself.
       </Text>
       <Pressable accessibilityRole="button" onPress={onHistory} style={styles.history}>
         <Text style={styles.historyLabel}>📜 See every question and answer</Text>
@@ -70,8 +70,8 @@ export function VoteScreen({ state, onHistory, onSubmit }: Props) {
 const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.display,
-    fontSize: 19,
-    color: colors.ember,
+    fontSize: 16,
+    color: colors.text,
   },
   history: {
     alignSelf: 'center',

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
@@ -9,7 +10,7 @@ import { Trophy } from '../components/Trophy';
 import { buzz, play } from '../feedback';
 import type { GameState } from '../game';
 import type { AwardResult } from '../results';
-import { colors, common, fonts, nativeDriver } from '../theme';
+import { colors, common, flameGradient, fonts, nativeDriver } from '../theme';
 
 type Props = {
   state: GameState;
@@ -85,7 +86,11 @@ export function CeremonyScreen({ state, results, onDone }: Props) {
               <Trophy emoji={result.category.emoji} />
             </Animated.View>
           ) : (
-            <Animated.Text style={[styles.drum, { transform: [{ rotate }] }]}>🥁</Animated.Text>
+            <Animated.View style={{ transform: [{ rotate }] }}>
+              <LinearGradient colors={flameGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.mystery}>
+                <Text style={styles.mysteryMark}>?</Text>
+              </LinearGradient>
+            </Animated.View>
           )}
         </View>
 
@@ -127,16 +132,25 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 30,
-    color: colors.gold,
+    fontSize: 24,
+    color: colors.text,
   },
   stage: {
     height: 220,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  drum: {
-    fontSize: 96,
+  mystery: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mysteryMark: {
+    fontFamily: fonts.display,
+    fontSize: 56,
+    color: '#FFFFFF',
   },
   winners: {
     gap: 12,

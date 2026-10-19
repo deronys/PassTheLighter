@@ -7,12 +7,13 @@ import { buzz, play } from '../feedback';
 import { type GameState, REACTIONS } from '../game';
 import { colors, fonts, nativeDriver } from '../theme';
 import { Avatar } from './Avatar';
+import { Flame } from './Lighter';
 import { PopIn } from './PopIn';
 
 // One-tap comments, so roasting someone doesn't need typing.
 export const QUICK_ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward…', '🔥 Savage', '🤥 Liar!'];
 
-const OWN_QUESTION: QuestionCategory = { name: 'Their own question', emoji: '✏️', colors: ['#FF8A3D', '#E0442B'] };
+const OWN_QUESTION: QuestionCategory = { name: 'Their own question', emoji: '✏️', colors: ['#FF6A2B', '#C4134F'] };
 
 type Props = {
   state: GameState;
@@ -85,8 +86,8 @@ export function SecretReveal({ state, index, revealed, onReveal, onComment, onRe
               <Text style={styles.bigEmoji}>{category.emoji}</Text>
             </LinearGradient>
           ) : (
-            <LinearGradient colors={['#3B2A63', '#1C1236']} style={[styles.cardFace, styles.cardBack]}>
-              <Text style={styles.backFlame}>🔥</Text>
+            <LinearGradient colors={['#221D2E', '#0F0D14']} style={[styles.cardFace, styles.cardBack]}>
+              <Flame size={56} />
               <Text style={styles.backLabel}>Tap to reveal</Text>
             </LinearGradient>
           )}
@@ -306,23 +307,23 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 18,
     gap: 10,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
     overflow: 'hidden',
   },
   cardBack: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: colors.flame,
-  },
-  backFlame: {
-    fontSize: 64,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 106, 43, 0.6)',
   },
   backLabel: {
-    fontFamily: fonts.display,
-    fontSize: 20,
-    letterSpacing: 1,
-    color: colors.flame,
+    fontFamily: fonts.semi,
+    fontSize: 12,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: colors.text,
   },
   cardTop: {
     flexDirection: 'row',
@@ -333,16 +334,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   category: {
-    fontFamily: fonts.display,
-    fontSize: 13,
-    letterSpacing: 1.5,
+    fontFamily: fonts.semi,
+    fontSize: 11,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     color: 'rgba(255, 255, 255, 0.85)',
   },
   question: {
-    fontFamily: fonts.display,
+    fontFamily: fonts.bold,
     fontSize: 24,
     lineHeight: 30,
+    letterSpacing: -0.4,
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowRadius: 6,
@@ -362,10 +364,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   answerLabel: {
-    fontFamily: fonts.display,
-    fontSize: 16,
+    fontFamily: fonts.semi,
+    fontSize: 11,
     color: colors.muted,
-    letterSpacing: 1,
+    letterSpacing: 2,
     textTransform: 'uppercase',
   },
   reactions: {

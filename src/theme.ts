@@ -1,27 +1,32 @@
 import { Platform, StyleSheet } from 'react-native';
 
-// A night out lit by a lighter: deep violet-blue darkness, warm flame accents.
+// A late night out: near-black, glassy surfaces, a hot orange-to-pink flame
+// gradient as the accent and acid lime for confirmed picks.
 export const colors = {
-  night: '#120B24',
-  dusk: '#2A1846',
-  surface: 'rgba(255, 255, 255, 0.07)',
-  surfaceStrong: 'rgba(255, 255, 255, 0.13)',
-  border: 'rgba(255, 255, 255, 0.14)',
-  text: '#FFF4E6',
-  muted: '#BBA9D6',
-  flame: '#FFB13B',
-  flameHot: '#FF5E3A',
-  ember: '#FFD86B',
-  onFlame: '#2B1300',
-  gold: '#FFD34D',
+  night: '#09090B',
+  dusk: '#15121D',
+  surface: 'rgba(255, 255, 255, 0.05)',
+  surfaceStrong: 'rgba(255, 255, 255, 0.09)',
+  border: 'rgba(255, 255, 255, 0.09)',
+  text: '#F5F4F7',
+  muted: '#8D8A99',
+  flame: '#FF6A2B',
+  flameHot: '#FF2D6F',
+  ember: '#FF9F6B',
+  onFlame: '#FFFFFF',
+  gold: '#FFC94D',
   // A confirmed choice, such as a vote.
-  pick: '#4CDB7A',
+  pick: '#C8FF3D',
 };
 
+// The accent gradient, for primary buttons, highlights and the flame.
+export const flameGradient: [string, string] = [colors.flame, colors.flameHot];
+
 export const fonts = {
-  display: 'LuckiestGuy_400Regular',
-  body: 'Nunito_600SemiBold',
-  bold: 'Nunito_800ExtraBold',
+  display: 'Unbounded_700Bold',
+  body: 'Inter_500Medium',
+  semi: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
 };
 
 // The native driver is not available on web.
@@ -34,21 +39,29 @@ export const common = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.display,
-    fontSize: 34,
-    color: colors.flame,
+    fontSize: 28,
+    lineHeight: 34,
+    color: colors.text,
     textAlign: 'center',
-    textShadowColor: 'rgba(255, 94, 58, 0.6)',
-    textShadowRadius: 12,
+    letterSpacing: -0.5,
   },
   heading: {
     fontFamily: fonts.display,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.text,
-    letterSpacing: 0.5,
+  },
+  // Small spaced-out caps above a section.
+  label: {
+    fontFamily: fonts.semi,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: colors.muted,
   },
   body: {
     fontFamily: fonts.body,
     fontSize: 16,
+    lineHeight: 22,
     color: colors.text,
   },
   muted: {
@@ -63,16 +76,16 @@ export const common = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 10,
+    borderRadius: 24,
+    padding: 18,
+    gap: 12,
   },
   input: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     fontFamily: fonts.body,

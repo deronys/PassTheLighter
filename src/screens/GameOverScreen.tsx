@@ -31,13 +31,13 @@ export function GameOverScreen({ state, onReveal }: Props) {
     <Screen centered footer={<Button label="Reveal the secrets" sound="flick" onPress={onReveal} />}>
       <View style={styles.stage}>
         <Animated.View style={[styles.ring, { opacity: ringOpacity, transform: [{ scale: ringScale }] }]} />
-        <Animated.Text style={[styles.boom, { transform: [{ scale }] }]}>💥</Animated.Text>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Avatar player={player} size={110} flames={3} highlighted />
+        </Animated.View>
       </View>
-      <Text style={common.title}>Game over!</Text>
-      <View style={styles.center}>
-        <Avatar player={player} size={84} flames={3} />
-      </View>
-      <Text style={[common.body, common.center]}>
+      <Text style={[common.label, common.center]}>Third time with the lighter</Text>
+      <Text style={common.title}>Game over</Text>
+      <Text style={[common.muted, common.center]}>
         {player.name} got the lighter three times. Time to find out what everyone was asked.
       </Text>
     </Screen>
@@ -46,7 +46,7 @@ export function GameOverScreen({ state, onReveal }: Props) {
 
 const styles = StyleSheet.create({
   stage: {
-    height: 150,
+    height: 210,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -55,13 +55,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 6,
-    borderColor: colors.flame,
-  },
-  boom: {
-    fontSize: 110,
-  },
-  center: {
-    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: colors.flameHot,
   },
 });

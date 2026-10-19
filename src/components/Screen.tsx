@@ -12,10 +12,33 @@ type Props = {
   centered?: boolean;
 };
 
+// The app's background: near-black with soft glows, like club lights at the
+// edge of the screen. Drawn once behind every screen and header.
+export function Backdrop() {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <LinearGradient colors={[colors.dusk, colors.night, colors.night]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={['rgba(255, 45, 111, 0.22)', 'rgba(255, 45, 111, 0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.3, y: 0.45 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['rgba(120, 60, 255, 0)', 'rgba(120, 60, 255, 0.16)']}
+        start={{ x: 0.8, y: 0.55 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+    </View>
+  );
+}
+
 export function Screen({ children, footer, centered }: Props) {
   return (
     <View style={styles.fill}>
-      <LinearGradient colors={[colors.dusk, colors.night]} style={StyleSheet.absoluteFill} />
       {centered ? (
         <View style={[common.content, styles.fill, styles.centered]}>{children}</View>
       ) : (

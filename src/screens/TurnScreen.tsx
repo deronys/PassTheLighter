@@ -13,7 +13,7 @@ import { type GameState, incomingPass, isLastTurn } from '../game';
 import { colors, common, fonts } from '../theme';
 
 // The look of your own card until you copy a question from an idea card.
-const OWN_CARD: QuestionCategory = { name: 'Your question', emoji: '✏️', colors: ['#FF8A3D', '#E0442B'] };
+const OWN_CARD: QuestionCategory = { name: 'Your question', emoji: '✏️', colors: ['#FF6A2B', '#C4134F'] };
 
 type Props = {
   state: GameState;
@@ -116,7 +116,7 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
         <PopIn>
           <View style={[common.card, styles.questionCard]}>
             <Text style={styles.kicker}>
-              {players[incoming.from].avatar} {players[incoming.from].name} asks you
+              {players[incoming.from].name} asks you
             </Text>
             <Text style={styles.question}>{incoming.question}</Text>
           </View>
@@ -174,9 +174,10 @@ const styles = StyleSheet.create({
     color: colors.ember,
   },
   question: {
-    fontFamily: fonts.display,
-    fontSize: 26,
-    lineHeight: 32,
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.4,
     color: colors.text,
   },
   lastCard: {
@@ -199,8 +200,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 16,
     gap: 8,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
     shadowColor: '#000',
     shadowOpacity: 0.45,
     shadowRadius: 16,
@@ -216,18 +217,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   ownKicker: {
-    fontFamily: fonts.display,
-    fontSize: 13,
-    letterSpacing: 1.5,
+    fontFamily: fonts.semi,
+    fontSize: 11,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     color: 'rgba(255, 255, 255, 0.85)',
   },
   ownInput: {
     flex: 1,
     minHeight: 96,
-    fontFamily: fonts.display,
-    fontSize: 24,
-    lineHeight: 30,
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    lineHeight: 28,
     color: '#FFFFFF',
     textAlignVertical: 'top',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',

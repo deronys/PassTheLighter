@@ -60,7 +60,7 @@ export function FinalScreen({ state, results, stats, unlocked, onComment, onReac
             <Text style={styles.awardEmoji}>{r.category.emoji}</Text>
             <View style={styles.awardText}>
               <Text style={styles.awardTitle}>{r.category.title}</Text>
-              <Text style={common.body}>{r.winners.map((i) => `${players[i].avatar} ${players[i].name}`).join(', ')}</Text>
+              <Text style={common.body}>{r.winners.map((i) => players[i].name).join(', ')}</Text>
             </View>
           </View>
         ))}
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   awardTitle: {
     fontFamily: fonts.display,
     fontSize: 16,
-    color: colors.gold,
+    color: colors.text,
   },
   statHeader: {
     flexDirection: 'row',

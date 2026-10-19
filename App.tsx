@@ -1,5 +1,7 @@
-import { LuckiestGuy_400Regular } from '@expo-google-fonts/luckiest-guy';
-import { Nunito_600SemiBold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { Unbounded_700Bold } from '@expo-google-fonts/unbounded/700Bold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -9,6 +11,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GameHeader } from './src/components/GameHeader';
 import { HistorySheet } from './src/components/HistorySheet';
 import { PlayerBar } from './src/components/PlayerBar';
+import { Backdrop } from './src/components/Screen';
 import { QUESTIONS } from './src/data/questions';
 import { type Deck, draw, newDeck } from './src/deck';
 import { setMuted } from './src/feedback';
@@ -47,7 +50,7 @@ import { colors } from './src/theme';
 const SUGGESTIONS_PER_TURN = 5;
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ LuckiestGuy_400Regular, Nunito_600SemiBold, Nunito_800ExtraBold });
+  const [fontsLoaded] = useFonts({ Unbounded_700Bold, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
   const [loaded, setLoaded] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [games, setGames] = useState<SavedGame[]>([]);
@@ -283,6 +286,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe}>
+        <Backdrop />
         <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {screen}
         </KeyboardAvoidingView>

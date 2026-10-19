@@ -19,4 +19,4 @@ export const ACHIEVEMENTS: Achievement[] = [
 
 export const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐙', '🦄', '🐯', '🐵', '🐧', '🦉', '🐺', '🐲', '👽', '🤖', '👻', '🎃', '🐝', '🦖', '🐬', '🦩'];
 
-export const PLAYER_COLORS = ['#FF6B4A', '#FFB84D', '#FFE14D', '#7CE38B', '#4DD8E6', '#5B8CFF', '#B57BFF', '#FF6FB5'];
+export const PLAYER_COLORS = ['#FF6A2B', '#FF2D6F', '#B14DFF', '#4D7CFF', '#22D3EE', '#C8FF3D', '#FFC94D', '#E8E6EE'];

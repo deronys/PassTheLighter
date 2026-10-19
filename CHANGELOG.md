@@ -2,6 +2,17 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.7.0 - 2026-10-19
+
+A new, more grown-up look for players in their 20s and 30s, in the style of today's social apps.
+
+- Near-black background with soft pink and violet glows, glassy cards and an orange-to-pink flame gradient as the accent. Acid lime marks confirmed picks.
+- New fonts: Unbounded for titles and Inter for everything else, replacing the cartoon font.
+- Avatars are now initials on a colour gradient instead of animal emoji. New players only pick a colour.
+- Pill buttons with the flame gradient; a sleek matte lighter with a gradient flame; awards as glowing badges instead of a cartoon cup; a pulsing "?" instead of the drum.
+- The header shows "‹ Games" and a flame counter (or "History" after the game) instead of emoji icons. Lighter counts under avatars are small bars.
+- Question cards and secret cards use deeper, more refined colours and a cleaner bold font.
+
 ## v0.6.0 - 2026-10-19
 
 - The Lighter Champion is now whoever got the most votes over all the awards in total, even without winning a single category. Ties share it. It is revealed last in the ceremony, as the grand finale.

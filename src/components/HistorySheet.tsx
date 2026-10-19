@@ -37,11 +37,11 @@ export function HistorySheet({ state, visible, onClose }: Props) {
               <View style={styles.row}>
                 <Text style={styles.number}>{index + 1}</Text>
                 <Text style={styles.player} numberOfLines={1}>
-                  {players[pass.from].avatar} {players[pass.from].name}
+                  {players[pass.from].name}
                 </Text>
                 <Text style={styles.arrow}>🔥→</Text>
                 <Text style={styles.player} numberOfLines={1}>
-                  {players[pass.to].avatar} {players[pass.to].name}
+                  {players[pass.to].name}
                 </Text>
               </View>
               {revealed && (
@@ -49,7 +49,7 @@ export function HistorySheet({ state, visible, onClose }: Props) {
                   <Text style={styles.question}>“{pass.question}”</Text>
                   {pass.answer !== undefined && (
                     <Text style={common.muted}>
-                      {players[pass.to].name} answered {players[pass.answer].avatar} {players[pass.answer].name}
+                      {players[pass.to].name} answered {players[pass.answer].name}
                     </Text>
                   )}
                 </View>

@@ -222,16 +222,16 @@ export type QuestionCategory = {
 };
 
 export const QUESTION_CATEGORIES: QuestionCategory[] = [
-  { name: 'Secrets', emoji: '🤫', colors: ['#8E3BFF', '#4B1A9E'] },
-  { name: 'Trust', emoji: '🤝', colors: ['#2F8CFF', '#16438F'] },
-  { name: 'Embarrassing', emoji: '🙈', colors: ['#FF5E8A', '#9E1F4A'] },
-  { name: 'Future', emoji: '🔮', colors: ['#B85CFF', '#5A1F9E'] },
-  { name: 'Survival', emoji: '🏝️', colors: ['#20B486', '#0D5E45'] },
-  { name: 'Personality', emoji: '🎭', colors: ['#FF9F1C', '#A3540A'] },
-  { name: 'Party', emoji: '🎉', colors: ['#FF4FD8', '#8A1A78'] },
-  { name: 'Love', emoji: '💘', colors: ['#FF4F5E', '#93162A'] },
-  { name: 'What if', emoji: '🌀', colors: ['#1FC6D9', '#0B5F6E'] },
-  { name: 'Spicy', emoji: '🌶️', colors: ['#FF6A2B', '#9A2A08'] },
+  { name: 'Secrets', emoji: '🤫', colors: ['#7B2FF7', '#2E0B7A'] },
+  { name: 'Trust', emoji: '🤝', colors: ['#2B6BFF', '#14257A'] },
+  { name: 'Embarrassing', emoji: '🙈', colors: ['#FF5C8A', '#8E1050'] },
+  { name: 'Future', emoji: '🔮', colors: ['#00B8D4', '#06506B'] },
+  { name: 'Survival', emoji: '🏝️', colors: ['#1FCB78', '#0A5A40'] },
+  { name: 'Personality', emoji: '🎭', colors: ['#FF8A2B', '#9C3608'] },
+  { name: 'Party', emoji: '🎉', colors: ['#D63CF5', '#5A137F'] },
+  { name: 'Love', emoji: '💘', colors: ['#FF3D5A', '#7E0C27'] },
+  { name: 'What if', emoji: '🌀', colors: ['#5B5FFF', '#1F1B66'] },
+  { name: 'Spicy', emoji: '🌶️', colors: ['#FF4D2E', '#7A0D0D'] },
 ];
 
 export const QUESTIONS_PER_CATEGORY = 20;

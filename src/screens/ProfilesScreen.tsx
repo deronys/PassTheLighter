@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   section: {
     fontFamily: fonts.display,
     fontSize: 16,
-    color: colors.ember,
+    color: colors.text,
     letterSpacing: 0.5,
   },
   line: {

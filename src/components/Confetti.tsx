@@ -4,7 +4,7 @@ import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-n
 import { colors, nativeDriver } from '../theme';
 
 const PIECES = 36;
-const PALETTE = [colors.flame, colors.flameHot, colors.gold, '#7CE38B', '#4DD8E6', '#B57BFF', '#FF6FB5'];
+const PALETTE = [colors.flame, colors.flameHot, colors.gold, colors.pick, '#B14DFF', '#FFFFFF'];
 
 // A burst of falling confetti, restarted whenever `burst` changes.
 export function Confetti({ burst }: { burst: number }) {

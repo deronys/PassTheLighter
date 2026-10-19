@@ -1,8 +1,9 @@
 import { useRef } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 
 import { buzz, play, type Sound } from '../feedback';
-import { colors, fonts, nativeDriver } from '../theme';
+import { colors, flameGradient, fonts, nativeDriver } from '../theme';
 
 type Props = {
   label: string;
@@ -12,7 +13,7 @@ type Props = {
   sound?: Sound | null;
 };
 
-// A chunky game button that squashes when pressed.
+// A pill button with the flame gradient (or glass for secondary) that squashes when pressed.
 export function Button({ label, onPress, disabled, variant = 'primary', sound = 'tap' }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
   const springTo = (value: number) =>
@@ -40,6 +41,7 @@ export function Button({ label, onPress, disabled, variant = 'primary', sound = 
           { transform: [{ scale }] },
         ]}
       >
+        {primary && <LinearGradient colors={flameGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />}
         <Text style={[styles.label, primary ? styles.primaryLabel : styles.secondaryLabel]}>{label}</Text>
       </Animated.View>
     </Pressable>
@@ -48,28 +50,31 @@ export function Button({ label, onPress, disabled, variant = 'primary', sound = 
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    borderRadius: 999,
+    paddingVertical: 17,
+    paddingHorizontal: 24,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   primary: {
-    backgroundColor: colors.flame,
-    borderBottomWidth: 5,
-    borderBottomColor: colors.flameHot,
+    shadowColor: colors.flameHot,
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   secondary: {
     backgroundColor: colors.surfaceStrong,
-    borderBottomWidth: 4,
-    borderBottomColor: 'rgba(0, 0, 0, 0.35)',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   disabled: {
-    opacity: 0.35,
+    opacity: 0.3,
   },
   label: {
-    fontFamily: fonts.display,
-    fontSize: 20,
-    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    letterSpacing: 0.2,
   },
   primaryLabel: {
     color: colors.onFlame,
