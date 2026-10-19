@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.8.1 - 2026-10-19
+
+- Removed the ad banner from Game Progress. It was not in the design; the banner stays only on the Game List, where the design has it.
+
 ## v0.8.0 - 2026-10-19
 
 The whole game is rebuilt from John's final screen designs. The pass-the-phone game of v0.7.0 and earlier stays on its release branches.
