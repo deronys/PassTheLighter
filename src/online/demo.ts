@@ -14,9 +14,6 @@ import {
   startGame,
 } from './rules.ts';
 
-// Short in the demo so "Take it back" can be tried.
-export const DEMO_TAKE_BACK_MS = 30 * 1000;
-
 export type Settings = { sound: boolean; notifications: boolean };
 
 export type DemoState = {
@@ -62,13 +59,10 @@ export function chance(key: string): number {
 const isBot = (state: DemoState, id: string) => id !== state.me?.id;
 
 // When a bot answers an invitation, and whether it says yes.
-const answerAt = (g: Game, bot: string) => g.createdAt + 3000 + chance(`${g.id}:${bot}:answer`) * 9000;
+const answerAt = (g: Game, bot: string) => g.createdAt + 1000 + chance(`${g.id}:${bot}:answer`) * 2000;
 const accepts = (g: Game, bot: string) => chance(`${g.id}:${bot}:yes`) < 0.85;
-// Some bots fall asleep holding the lighter, so taking it back can be tried.
-const movesAt = (g: Game) => {
-  const key = `${g.id}:${g.passes.length}`;
-  return chance(`${key}:sleepy`) < 0.15 ? Infinity : g.lastMoveAt + 6000 + chance(`${key}:delay`) * 9000;
-};
+// Bots answer within seconds, so a demo game moves fast enough to follow.
+const movesAt = (g: Game) => g.lastMoveAt + 2000 + chance(`${g.id}:${g.passes.length}:delay`) * 2000;
 
 export function newDemo(): DemoState {
   return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true } };

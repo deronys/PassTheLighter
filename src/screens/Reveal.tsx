@@ -10,7 +10,7 @@ import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
-import { AdBanner, useFlames } from './Lobby';
+import { useFlames } from './Lobby';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -169,11 +169,21 @@ export function GameProgress({ id }: { id: string }) {
   return (
     <Screen title="GAME PROGRESS" onBack={nav.back} flames={flames}>
       <Text style={styles.gameName}>{g.name.toUpperCase()}</Text>
-      {holder ? (
+      {holder?.id === me.id ? (
+        // Back to the game screen, where you choose who gets the lighter.
+        <Pressable accessibilityRole="button" accessibilityLabel="You have the lighter. Click to pass it" onPress={nav.back}>
+          <PassBanner left={<Avatar user={holder} size={70} lighter />}>
+            <Title size={22} color={colors.white}>
+              YOU HAVE THE LIGHTER.
+            </Title>
+            <Text style={styles.passIt}>CLICK TO PASS IT ▶</Text>
+          </PassBanner>
+        </Pressable>
+      ) : holder ? (
         <PassBanner left={<Avatar user={holder} size={70} lighter />}>
-          <Text style={styles.bannerName}>{holder.id === me.id ? 'You' : firstName(holder)}</Text>
+          <Text style={styles.bannerName}>{firstName(holder)}</Text>
           <Title size={22} color={colors.white}>
-            {holder.id === me.id ? 'HAVE THE LIGHTER!' : 'HAS THE LIGHTER!'}
+            HAS THE LIGHTER!
           </Title>
         </PassBanner>
       ) : (
@@ -188,6 +198,9 @@ export function GameProgress({ id }: { id: string }) {
         const seen = canSee(g, i, me.id);
         return (
           <View key={i} style={styles.progressRow}>
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>{i + 1}</Text>
+            </View>
             <View style={styles.progressQuestion}>
               {seen ? (
                 <View style={styles.miniBubble}>
@@ -207,7 +220,6 @@ export function GameProgress({ id }: { id: string }) {
           </View>
         );
       })}
-      <AdBanner />
     </Screen>
   );
 }
@@ -347,6 +359,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  passIt: {
+    fontFamily: fonts.comic,
+    fontSize: 20,
+    color: colors.yellow,
+    marginTop: 4,
+    ...comicShadow,
+  },
+  // The step's place in the game, oldest first.
+  step: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.red,
+    borderWidth: 3,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumber: {
+    fontFamily: fonts.comic,
+    fontSize: 17,
+    color: colors.white,
+    marginTop: 2,
   },
   progressQuestion: {
     flex: 1,

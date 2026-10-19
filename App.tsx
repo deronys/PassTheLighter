@@ -102,9 +102,11 @@ function Toast() {
 }
 
 const styles = StyleSheet.create({
+  // Clipped so nothing makes the whole page scroll on a phone browser; lists scroll inside their screens.
   fill: {
     flex: 1,
     backgroundColor: colors.teal,
+    overflow: 'hidden',
   },
   toast: {
     position: 'absolute',

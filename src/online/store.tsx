@@ -5,8 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { setMuted } from '../feedback';
-import { DEMO_TAKE_BACK_MS, type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
-import { type Game, type User, burn, createGame, passAndAsk, removeFor, respond, startGame, takeBack } from './rules';
+import { type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
+import { type Game, type User, burn, createGame, passAndAsk, removeFor, respond, startGame } from './rules';
 
 const KEY = 'ptl.demo.v1';
 
@@ -29,7 +29,6 @@ type Store = {
   respond: (gameId: string, accept: boolean) => void;
   start: (gameId: string) => void;
   pass: (gameId: string, to: string, question: string) => void;
-  takeBack: (gameId: string) => void;
   burn: (gameId: string, passIndex: number) => void;
   remove: (gameId: string) => void;
 };
@@ -111,7 +110,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       respond: (id, accept) => onGame(id, (g, u) => respond(g, u, accept, Date.now())),
       start: (id) => onGame(id, (g, u) => startGame(g, u, Date.now())),
       pass: (id, to, question) => onGame(id, (g, u) => passAndAsk(g, u, to, question, Date.now())),
-      takeBack: (id) => onGame(id, (g, u) => takeBack(g, u, Date.now(), DEMO_TAKE_BACK_MS)),
       burn: (id, index) => onGame(id, (g, u) => burn(g, index, u)),
       remove: (id) => onGame(id, (g, u) => removeFor(g, u, Date.now())),
     };

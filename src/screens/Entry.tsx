@@ -59,7 +59,7 @@ const TUTORIAL = [
   { title: 'GRAB THE LIGHTER', text: 'Start a game with your friends. The host holds the lighter first.' },
   { title: 'PASS AND ASK', text: 'Pass the lighter to a friend and ask them a secret question. Only they can read it.' },
   { title: 'ANSWER WITH THE LIGHTER', text: 'To answer your question, pass the lighter to the friend who is your answer, and ask them a new one. Never say why!' },
-  { title: 'BURN THE QUESTION', text: "Got the lighter and dying to know why? Watch a short ad to burn the hidden question and reveal it." },
+  { title: 'BURN THE QUESTION', text: 'Got the lighter and dying to know why? Burn the hidden question to reveal it.' },
 ];
 
 export function Tutorial({ fromMenu }: { fromMenu?: boolean }) {

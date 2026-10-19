@@ -12,8 +12,6 @@ export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 12;
 // How long invitations stay open in the waiting room.
 export const INVITE_WINDOW_MS = 2 * 60 * 1000;
-// The last passer can take the lighter back if the receiver hasn't played for this long.
-export const TAKE_BACK_AFTER_MS = 60 * 60 * 1000;
 
 export type User = {
   id: string;
@@ -132,24 +130,6 @@ export function passAndAsk(game: Game, from: string, to: string, question: strin
 }
 
 export const lastPass = (game: Game): Pass | undefined => game.passes[game.passes.length - 1];
-
-// When the last passer may take the lighter back, or undefined if they never can.
-export function takeBackAt(game: Game, user: string, after = TAKE_BACK_AFTER_MS): number | undefined {
-  const last = lastPass(game);
-  if (game.status !== 'active' || !last || last.from !== user || game.holder !== last.to) return undefined;
-  return last.at + after;
-}
-
-export function canTakeBack(game: Game, user: string, now: number, after = TAKE_BACK_AFTER_MS): boolean {
-  const at = takeBackAt(game, user, after);
-  return at !== undefined && now >= at;
-}
-
-// The receiver didn't play for a long time: the last passer takes the lighter back.
-export function takeBack(game: Game, user: string, now: number, after = TAKE_BACK_AFTER_MS): Game {
-  if (!canTakeBack(game, user, now, after)) throw new Error("You can't take the lighter back yet");
-  return { ...game, holder: user, passes: game.passes.slice(0, -1), lastMoveAt: now };
-}
 
 export function roleOf(game: Game, user: string): Role {
   if (game.status === 'finished') return 'finished';

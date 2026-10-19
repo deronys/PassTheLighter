@@ -8,7 +8,6 @@ import {
   burn,
   canSee,
   canStart,
-  canTakeBack,
   createGame,
   passAndAsk,
   players,
@@ -18,7 +17,6 @@ import {
   respond,
   roleOf,
   startGame,
-  takeBack,
   visibleTo,
 } from './rules.ts';
 
@@ -76,16 +74,6 @@ test('the receiver sees their question but not the one they answer; burning reve
   g = burn(g, 0, 'c');
   assert.ok(canSee(g, 0, 'c'));
   assert.ok(!canSee(g, 0, 'd'));
-});
-
-test('the last passer can take the lighter back after a while', () => {
-  const g = passAndAsk(started(), 'a', 'b', 'Who snores?', 3);
-  assert.ok(!canTakeBack(g, 'a', 10, 100));
-  assert.ok(!canTakeBack(g, 'c', 200, 100));
-  assert.ok(canTakeBack(g, 'a', 200, 100));
-  const back = takeBack(g, 'a', 200, 100);
-  assert.equal(back.holder, 'a');
-  assert.equal(back.passes.length, 0);
 });
 
 test('the host removing a game ends it; others only hide it', () => {

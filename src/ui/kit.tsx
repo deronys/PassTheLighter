@@ -43,9 +43,10 @@ type ScreenProps = {
 // The teal background, the red header and a pinned footer for the main buttons.
 export function Screen({ title, onBack, flames, onFlames, children, footer, scroll = true }: ScreenProps) {
   const insets = useSafeAreaInsets();
-  const body = <View style={styles.body}>{children}</View>;
+  // Without its own scroll, the body is held to the screen height so lists inside it can scroll.
+  const body = <View style={[styles.body, !scroll && styles.bodyFixed]}>{children}</View>;
   return (
-    <ImageBackground source={art.background} style={styles.fill} resizeMode="cover">
+    <ImageBackground source={art.background} style={[styles.fill, styles.clip]} resizeMode="cover">
       {title !== undefined && (
         <ImageBackground source={art.header} style={[styles.header, { paddingTop: insets.top }]} resizeMode="stretch">
           <View style={styles.headerRow}>
@@ -70,7 +71,7 @@ export function Screen({ title, onBack, flames, onFlames, children, footer, scro
           {body}
         </ScrollView>
       ) : (
-        <View style={[styles.fill, styles.scroll]}>{body}</View>
+        <View style={[styles.fill, styles.scroll, styles.bodyFixed]}>{body}</View>
       )}
       {footer && <View style={[styles.footer, { paddingBottom: 14 + insets.bottom }]}>{footer}</View>}
     </ImageBackground>
@@ -349,6 +350,10 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
   },
+  // The background picture is taller than most phones; don't let it make the page scroll.
+  clip: {
+    overflow: 'hidden',
+  },
   header: {
     width: '100%',
     paddingBottom: 18,
@@ -406,6 +411,10 @@ const styles = StyleSheet.create({
   body: {
     flexGrow: 1,
     gap: 18,
+  },
+  bodyFixed: {
+    flex: 1,
+    minHeight: 0,
   },
   footer: {
     paddingHorizontal: 18,

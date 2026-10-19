@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { QUESTIONS } from '../data/questions';
+import { type Deck, draw, newDeck } from '../deck';
 import { play } from '../feedback';
 import { useNav } from '../nav';
-import { DEMO_TAKE_BACK_MS, firstName } from '../online/demo';
-import { type Game, canSee, lastPass, players, reasonIndex, receives, roleOf, takeBackAt } from '../online/rules';
+import { firstName } from '../online/demo';
+import { type Game, canSee, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
+import { QuestionDeck } from '../ui/QuestionDeck';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, PassBanner, QuestionCoin, Screen, SpeechBubble, Tag, Title } from '../ui/kit';
 import { WaitingRoom, useFlames } from './Lobby';
 
@@ -104,12 +106,24 @@ function HolderScreen({ game }: { game: Game }) {
   );
 }
 
-// 09: write the question for the friend you picked.
+// 09: write the question for the friend you picked, or use a suggested one.
+// The Ask button sits right under the question, not pinned to the bottom, so a
+// phone keyboard never pushes it over the text box.
+let suggestionDeck: Deck = newDeck(QUESTIONS.length);
+const SUGGESTIONS_PER_HAND = 5;
+
+function dealSuggestions(): number[] {
+  const result = draw(suggestionDeck, SUGGESTIONS_PER_HAND, QUESTIONS.length);
+  suggestionDeck = result.deck;
+  return result.picks;
+}
+
 export function AskQuestion({ id, to }: { id: string; to: string }) {
   const nav = useNav();
   const { game, me, user, pass } = useStore();
   const flames = useFlames();
   const [question, setQuestion] = useState('');
+  const [cards, setCards] = useState(dealSuggestions);
   const target = user(to);
   const g = game(id);
   if (!g) return <Gone />;
@@ -127,12 +141,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
 
   return (
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen
-        title="ASK A QUESTION"
-        onBack={nav.back}
-        flames={flames}
-        footer={<ComicButton label="ASK A QUESTION" sound="pass" disabled={!question.trim()} onPress={send} />}
-      >
+      <Screen title="ASK A QUESTION" onBack={nav.back} flames={flames}>
         <PassBanner left={<Avatar user={me} size={70} label="You" />} right={<Avatar user={target} size={70} lighter label={firstName(target)} />} burst={false}>
           <BannerText line="YOU PASS THE LIGHTER TO" size={20} />
         </PassBanner>
@@ -142,7 +151,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
         <View style={styles.askRow}>
           <Avatar user={me} size={64} />
           <View style={styles.grow}>
-            <SpeechBubble coin={<QuestionCoin size={46} onPress={suggest} label="Suggest a question" />}>
+            <SpeechBubble coin={<QuestionCoin size={46} onPress={suggest} label="Random question" />}>
               <TextInput
                 value={question}
                 onChangeText={setQuestion}
@@ -151,26 +160,28 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
                 multiline
                 maxLength={140}
                 style={styles.input}
-                autoFocus
               />
             </SpeechBubble>
           </View>
         </View>
-        <Text style={styles.hint}>Write your own, or tap the ? for an idea. Only {firstName(target)} will see it.</Text>
+        <ComicButton label="ASK A QUESTION" sound="pass" disabled={!question.trim()} onPress={send} />
+        <Text style={styles.hint}>Only {firstName(target)} will see it.</Text>
+        <Title size={22} style={styles.section}>
+          NEED AN IDEA?
+        </Title>
+        <QuestionDeck cards={cards} onDeal={() => setCards(dealSuggestions())} onUse={(i) => setQuestion(QUESTIONS[i])} />
       </Screen>
     </KeyboardAvoidingView>
   );
 }
 
-// 10b: you just passed the lighter. You can take it back if they sit on it.
+// 10b: you just passed the lighter. There is no taking it back.
 function PlayerStatus({ game }: { game: Game }) {
   const nav = useNav();
-  const { me, user, now, takeBack } = useStore();
+  const { me, user } = useStore();
   const flames = useFlames();
   const last = lastPass(game)!;
   const to = user(last.to);
-  const at = takeBackAt(game, me.id, DEMO_TAKE_BACK_MS) ?? 0;
-  const wait = at - now;
 
   return (
     <Screen
@@ -184,10 +195,7 @@ function PlayerStatus({ game }: { game: Game }) {
         <BannerText line="YOU PASSED THE LIGHTER TO" size={20} />
       </PassBanner>
       <View style={styles.center}>
-        <ComicButton label="TAKE IT BACK" disabled={wait > 0} onPress={() => takeBack(game.id)} style={styles.takeBack} />
-        <Text style={styles.hint}>
-          {wait > 0 ? `If ${firstName(to)} doesn't move, you can take it back in ${Math.ceil(wait / 1000)}s.` : `${firstName(to)} is taking a while. You can take the lighter back.`}
-        </Text>
+        <ComicButton label="CHECK GAME STATUS" onPress={() => nav.push({ name: 'progress', id: game.id })} style={styles.takeBack} />
       </View>
       <Title size={24} style={styles.section}>
         AND YOU ASKED
@@ -322,7 +330,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   } as object,
   takeBack: {
-    minWidth: 240,
+    minWidth: 280,
     marginTop: 10,
   },
 });

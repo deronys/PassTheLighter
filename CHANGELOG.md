@@ -2,6 +2,20 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.9.0 - 2026-10-19
+
+Changes from John's "Improvements New Version V1".
+
+- How to play no longer mentions ads, and it only shows the first time the game is opened.
+- No countdown timer in the waiting room.
+- Suggested questions are back on the Ask a Question screen as swipeable idea cards (Use it, New cards), under your own question.
+- Removed the ad banner from the Game List and Game Progress.
+- Game Progress numbers each pass in order. When you hold the lighter its top banner says "You have the lighter. Click to pass it" and takes you to pass it.
+- After passing, the lighter can't be taken back: "Take it back" is now "Check game status".
+- Demo friends answer invitations in 1 to 3 seconds and pass the lighter in 2 to 4 seconds.
+- Fixed: the friend list on Invite Friends couldn't be scrolled on a phone.
+- Fixed: on a phone the Ask a Question button rose with the keyboard and covered the text box. It now sits right under the question.
+
 ## v0.8.2 - 2026-10-19
 
 - The ad banner is back on Game Progress (John wants to keep it).

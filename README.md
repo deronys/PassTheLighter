@@ -7,10 +7,10 @@ A party game for Android and iPhone, built with [Expo](https://expo.dev) (React 
 Each player plays on their own phone, online with their friends. This build is a demo: the friends are computer players and the ads are pretend, so it can be tried before real accounts are connected.
 
 1. Sign in, then create a game and invite at least 3 friends. The game starts once at least 4 players accept (up to 12). The host holds the lighter first.
-2. Whoever holds the lighter passes it to a friend and asks them a secret question, written by them or suggested with the yellow ? coin. Only that friend can read it.
+2. Whoever holds the lighter passes it to a friend and asks them a secret question: their own, or one of the suggested question cards. Only that friend can read it.
 3. The friend answers by passing the lighter to the person who is their answer, never saying why, and asks them a new question.
 4. Everyone else sees only "Question hidden". Watching an ad burns a hidden question and reveals it. "Learn why" shows the question that got the lighter passed to you.
-5. If a friend sits on the lighter, the player who passed it can take it back (after 30 seconds in the demo).
+5. Once passed, the lighter can't be taken back. Game Progress lists every pass, numbered in order.
 
 The screens follow John's final designs and `Screens_Flow_revised.md`.
 
@@ -19,7 +19,7 @@ The screens follow John's final designs and `Screens_Flow_revised.md`.
 - `src/online/rules.ts`: the online game rules, as pure functions (`rules.test.ts` tests them).
 - `src/online/demo.ts`: the demo server: friends, sample games and the computer players' moves. `src/online/store.tsx` keeps that state on the phone and gives the screens their actions. A real backend (Firebase, Facebook and Google sign-in, AdMob) will sit behind the same actions.
 - `src/nav.tsx`: the screen stack. `src/screens/`: Entry (welcome, how to play, login, menu), Lobby (game list, invite, waiting room), Play (pass, ask, game status), Reveal (burn, game progress, ad) and Extras (settings, friends).
-- `src/ui/kit.tsx`: the painted header, comic buttons, speech bubbles, hidden ticket and the rest. `assets/art/`: art cut from the designs.
+- `src/ui/kit.tsx`: the painted header, comic buttons, speech bubbles, hidden ticket and the rest. `src/ui/QuestionDeck.tsx`: the suggested question cards. `assets/art/`: art cut from the designs.
 - `src/data/questions.ts`: the 200 suggested questions.
 
 ## Run it

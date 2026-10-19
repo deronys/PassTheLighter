@@ -8,7 +8,7 @@ import { firstName } from '../online/demo';
 import { type Game, MAX_PLAYERS, MIN_PLAYERS, canStart, players, roleOf, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, ComicButton, Countdown, Panel, Screen, Title } from '../ui/kit';
+import { Avatar, ComicButton, Panel, Screen, Title } from '../ui/kit';
 
 export function useFlames() {
   const { state, me } = useStore();
@@ -100,7 +100,6 @@ export function GameList() {
           </Pressable>
         );
       })}
-      <AdBanner />
     </Screen>
   );
 }
@@ -111,15 +110,6 @@ function HostLabel({ name }: { name: string }) {
       <Text style={styles.hostWord}>HOST:{'\n'}</Text>
       {name}
     </Text>
-  );
-}
-
-// Where a banner ad would go in the real game.
-export function AdBanner() {
-  return (
-    <View style={styles.banner} accessibilityLabel="Advertisement">
-      <Text style={styles.bannerLabel}>Ad banner (demo)</Text>
-    </View>
   );
 }
 
@@ -247,11 +237,10 @@ const SEAT_STATUS = {
 // 07 and 07b: the lobby, with Start for the host or Accept/Reject for an invitation.
 export function WaitingRoom({ game }: { game: Game }) {
   const nav = useNav();
-  const { me, user, now, start, respond } = useStore();
+  const { me, user, start, respond } = useStore();
   const flames = useFlames();
   const invited = roleOf(game, me.id) === 'invited';
   const isHost = game.hostId === me.id;
-  const left = game.startsAt - now;
   const accepted = players(game).length;
 
   const footer = invited ? (
@@ -280,13 +269,11 @@ export function WaitingRoom({ game }: { game: Game }) {
             <Title size={20} color={colors.white}>
               INVITES YOU TO "{game.name.toUpperCase()}"
             </Title>
-            <Countdown ms={left} />
           </View>
         </View>
       ) : (
         <View style={styles.center}>
           <Text style={styles.gameTitle}>{game.name.toUpperCase()}</Text>
-          <Countdown ms={left} caption={left > 0 ? 'THE GAME STARTS IN:' : 'INVITATIONS CLOSED'} />
         </View>
       )}
       <Text style={styles.hint}>
@@ -408,6 +395,7 @@ const styles = StyleSheet.create({
   },
   inviteBody: {
     flex: 1,
+    minHeight: 0,
     flexDirection: 'row',
     gap: 6,
   },
