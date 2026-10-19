@@ -2,6 +2,19 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.3.0 - 2026-10-19
+
+From John's "Improvements V1" list.
+
+- New game look: night-time gradient, game fonts, a drawn lighter with a flickering flame, bouncy buttons and pop-in animations, sound effects and vibration (sound can be turned off on the home screen).
+- Player profiles saved on the phone: name, avatar and colour, with lifetime stats (games, lighters received, questions asked, comments, awards), trophies and 8 achievements.
+- During the game every player's avatar shows how many times they got the lighter, and a History button shows who passed to whom, with the questions kept secret.
+- A pool of 200 questions. Each turn suggests 5 at random, with a button for 5 new ones. No question repeats until the whole pool has been shown, even across games.
+- After the game: every question is revealed, and players can react with emoji and post comments on each pass.
+- Award voting: each game picks 5 random categories out of 14, the same for all players. Everyone votes in secret and cannot vote for themselves. The Lighter Champion (most lighters received; ties share it) is worked out automatically.
+- Awards ceremony with a drumroll, falling trophies, confetti and a fanfare for each award.
+- Final recap with tabs for awards, moments (questions, answers, reactions, comments) and stats, including achievements unlocked that game.
+
 ## v0.2.0 - 2026-10-19
 
 - First playable version, on one shared phone that acts as the lighter.

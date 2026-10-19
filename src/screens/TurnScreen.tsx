@@ -1,63 +1,98 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Chip } from '../components';
-import { GameState, SAMPLE_QUESTIONS, incomingPass, isLastTurn } from '../game';
-import { colors, common } from '../theme';
+import { Avatar } from '../components/Avatar';
+import { Button } from '../components/Button';
+import { Chip } from '../components/Chip';
+import { PopIn } from '../components/PopIn';
+import { Screen } from '../components/Screen';
+import { play } from '../feedback';
+import { type GameState, incomingPass, isLastTurn } from '../game';
+import { colors, common, fonts } from '../theme';
 
 type Props = {
   state: GameState;
+  suggestions: string[];
+  top: React.ReactNode;
+  onShuffle: () => void;
   onPass: (to: number, question: string) => void;
   onAnswerLast: (answer: number) => void;
 };
 
-export function TurnScreen({ state, onPass, onAnswerLast }: Props) {
+export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswerLast }: Props) {
   const [picked, setPicked] = useState<number | undefined>();
   const [question, setQuestion] = useState('');
 
   const { players, holder } = state;
   const incoming = incomingPass(state);
   const last = isLastTurn(state);
-  const others = players.map((name, index) => ({ name, index })).filter((p) => p.index !== holder);
+  const others = players.map((player, index) => ({ player, index })).filter((p) => p.index !== holder);
 
-  const pickPrompt = incoming
-    ? 'Answer by picking who gets the lighter. Don’t tell them why.'
-    : 'Who gets the lighter first?';
+  const pick = (index: number) => {
+    play('pop');
+    setPicked(index);
+  };
+
+  const footer = last ? (
+    <Button
+      label="Reveal everything"
+      sound={null}
+      disabled={picked === undefined}
+      onPress={() => picked !== undefined && onAnswerLast(picked)}
+    />
+  ) : (
+    <Button
+      label={picked === undefined ? 'Pass the lighter' : `Pass to ${players[picked].name} 🔥`}
+      sound="pass"
+      disabled={picked === undefined || question.trim().length === 0}
+      onPress={() => picked !== undefined && onPass(picked, question)}
+    />
+  );
 
   return (
-    <ScrollView contentContainerStyle={common.content} keyboardShouldPersistTaps="handled">
-      <Text style={common.muted}>{players[holder]}, you have the lighter 🔥</Text>
+    <Screen footer={footer}>
+      {top}
 
       {incoming && (
-        <View style={common.card}>
-          <Text style={common.muted}>{players[incoming.from]} asks you:</Text>
-          <Text style={styles.question}>{incoming.question}</Text>
-        </View>
+        <PopIn>
+          <View style={[common.card, styles.questionCard]}>
+            <Text style={styles.kicker}>
+              {players[incoming.from].avatar} {players[incoming.from].name} asks you
+            </Text>
+            <Text style={styles.question}>{incoming.question}</Text>
+          </View>
+        </PopIn>
       )}
 
       {last && (
-        <Text style={common.body}>
-          This is your third time with the lighter. Answer the question, then everything gets revealed.
-        </Text>
+        <View style={[common.card, styles.lastCard]}>
+          <Text style={styles.lastTitle}>Third time with the lighter!</Text>
+          <Text style={common.body}>Answer this last question, then all the secrets come out.</Text>
+        </View>
       )}
 
-      <Text style={common.heading}>{last ? 'Your answer' : pickPrompt}</Text>
-      <View style={styles.chips}>
-        {others.map((p) => (
-          <Chip key={p.index} label={p.name} selected={picked === p.index} onPress={() => setPicked(p.index)} />
+      <Text style={common.heading}>
+        {last ? 'Your answer' : incoming ? 'Answer by passing the lighter' : 'Who gets the lighter first?'}
+      </Text>
+      {incoming && !last && <Text style={common.muted}>Pick your answer. Don't tell them why!</Text>}
+      <View style={styles.players}>
+        {others.map(({ player, index }) => (
+          <Avatar
+            key={player.id}
+            player={player}
+            size={58}
+            flames={state.receives[index]}
+            selected={picked === index}
+            dimmed={picked !== undefined && picked !== index}
+            onPress={() => pick(index)}
+          />
         ))}
       </View>
 
-      {last ? (
-        <Button
-          label="Reveal everything"
-          disabled={picked === undefined}
-          onPress={() => picked !== undefined && onAnswerLast(picked)}
-        />
-      ) : (
+      {!last && (
         <>
           <Text style={common.heading}>
-            {picked === undefined ? 'Your secret question' : `Your secret question for ${players[picked]}`}
+            {picked === undefined ? 'Your secret question' : `Your secret question for ${players[picked].name}`}
           </Text>
           <Text style={common.muted}>Ask about the others in the group. They answer by passing the lighter on.</Text>
           <TextInput
@@ -69,36 +104,73 @@ export function TurnScreen({ state, onPass, onAnswerLast }: Props) {
             multiline
             maxLength={200}
           />
-          <Text style={common.muted}>Need an idea?</Text>
-          <View style={styles.chips}>
-            {SAMPLE_QUESTIONS.slice(0, 4).map((q) => (
-              <Chip key={q} label={q} onPress={() => setQuestion(q)} />
+          <View style={styles.suggestHeader}>
+            <Text style={common.muted}>Need an idea?</Text>
+            <Pressable accessibilityRole="button" onPress={onShuffle} style={styles.shuffle}>
+              <Text style={styles.shuffleLabel}>🎲 New ideas</Text>
+            </Pressable>
+          </View>
+          <View style={common.row}>
+            {suggestions.map((q) => (
+              <Chip key={q} label={q} selected={q === question} onPress={() => setQuestion(q)} />
             ))}
           </View>
-          <Button
-            label="Pass the lighter"
-            disabled={picked === undefined || question.trim().length === 0}
-            onPress={() => picked !== undefined && onPass(picked, question)}
-          />
         </>
       )}
-    </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  questionCard: {
+    borderColor: colors.flame,
+    borderWidth: 2,
+    backgroundColor: 'rgba(255, 177, 59, 0.12)',
+  },
+  kicker: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.ember,
+  },
   question: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 26,
+    lineHeight: 32,
     color: colors.text,
   },
-  chips: {
+  lastCard: {
+    backgroundColor: 'rgba(255, 94, 58, 0.18)',
+    borderColor: colors.flameHot,
+  },
+  lastTitle: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+    color: colors.flameHot,
+  },
+  players: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 16,
+    justifyContent: 'center',
   },
   questionInput: {
     minHeight: 88,
     textAlignVertical: 'top',
+  },
+  suggestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shuffle: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceStrong,
+  },
+  shuffleLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.text,
   },
 });
