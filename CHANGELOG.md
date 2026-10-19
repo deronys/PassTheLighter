@@ -2,6 +2,16 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.8.0 - 2026-10-19
+
+The whole game is rebuilt from John's final screen designs. The pass-the-phone game of v0.7.0 and earlier stays on its release branches.
+
+- Online-style game: every player has their own phone. Create a game, invite friends, accept or reject invitations, and the host starts once 4 players are in.
+- Pass the lighter and ask a secret question; answer by passing it on. Others see "Question hidden" and can burn it by watching an ad. "Learn why" shows why you got the lighter. The player who passed can take it back if the lighter sits too long.
+- Screens: welcome, how to play, login, main menu, game list, invite friends, waiting room, pass the lighter, ask a question, you got it, game status, burn a question, game progress, ad, settings and friends.
+- New look from the designs: teal felt background, red painted header with the flame counter, red and yellow comic buttons, speech bubbles and the Luckiest Guy and Fredoka fonts.
+- Demo mode: friends are computer players that accept invites and pass the lighter on their own, sign-in is pretend and the ads are placeholders.
+
 ## v0.7.0 - 2026-10-19
 
 A new, more grown-up look for players in their 20s and 30s, in the style of today's social apps.

@@ -1,311 +1,134 @@
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
-import { Unbounded_700Bold } from '@expo-google-fonts/unbounded/700Bold';
+import { Fredoka_500Medium } from '@expo-google-fonts/fredoka/500Medium';
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka/600SemiBold';
+import { LuckiestGuy_400Regular } from '@expo-google-fonts/luckiest-guy/400Regular';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GameHeader } from './src/components/GameHeader';
-import { HistorySheet } from './src/components/HistorySheet';
-import { PlayerBar } from './src/components/PlayerBar';
-import { Backdrop } from './src/components/Screen';
-import { QUESTIONS } from './src/data/questions';
-import { type Deck, draw, newDeck } from './src/deck';
-import { setMuted } from './src/feedback';
-import {
-  type GameState,
-  addComment,
-  answerLast,
-  beginTurn,
-  beginVote,
-  castVotes,
-  finishCeremony,
-  passLighter,
-  react,
-  showRecap,
-  startGame,
-  resumeState,
-  startVoting,
-  type Player,
-} from './src/game';
-import { type SavedGame, newSavedGame, removeGame, sortGames, upsertGame } from './src/games';
-import { type Profile, recordGame } from './src/profiles';
-import { awardResults, pickVotedCategories, playerStats } from './src/results';
-import { CeremonyScreen } from './src/screens/CeremonyScreen';
-import { FinalScreen } from './src/screens/FinalScreen';
-import { GameOverScreen } from './src/screens/GameOverScreen';
-import { HandoffScreen } from './src/screens/HandoffScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
-import { NewGameScreen } from './src/screens/NewGameScreen';
-import { ProfilesScreen } from './src/screens/ProfilesScreen';
-import { RecapScreen } from './src/screens/RecapScreen';
-import { TurnScreen } from './src/screens/TurnScreen';
-import { VoteScreen } from './src/screens/VoteScreen';
-import { loadGames, loadSaved, saveDeck, saveGames, saveMuted, saveProfiles } from './src/storage';
-import { colors } from './src/theme';
+import { NavProvider, type Route, useNav } from './src/nav';
+import { StoreProvider, useStore } from './src/online/store';
+import { Login, MainMenu, Splash, Tutorial } from './src/screens/Entry';
+import { Friends, Settings } from './src/screens/Extras';
+import { GameList, InviteFriends } from './src/screens/Lobby';
+import { AskQuestion, GameScreen } from './src/screens/Play';
+import { Advertisement, BurnQuestion, GameProgress } from './src/screens/Reveal';
+import { colors, fonts } from './src/theme';
 
-const SUGGESTIONS_PER_TURN = 5;
+const TOAST_MS = 5000;
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ Unbounded_700Bold, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  const [loaded, setLoaded] = useState(false);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [games, setGames] = useState<SavedGame[]>([]);
-  const [muted, setMutedState] = useState(false);
-  const deck = useRef<Deck>(newDeck(QUESTIONS.length));
-
-  const [view, setView] = useState<'home' | 'new' | 'profiles' | 'game'>('home');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<number[]>([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
-  useEffect(() => {
-    Promise.all([loadSaved(), loadGames()]).then(([saved, savedGames]) => {
-      setProfiles(saved.profiles);
-      setGames(sortGames(savedGames));
-      deck.current = saved.deck;
-      setMutedState(saved.muted);
-      setMuted(saved.muted);
-      setLoaded(true);
-    });
-  }, []);
-
-  const current = games.find((g) => g.id === currentId) ?? null;
-
-  const updateProfiles = (next: Profile[]) => {
-    setProfiles(next);
-    saveProfiles(next);
-  };
-
-  const storeGame = (game: SavedGame) => {
-    setGames((list) => {
-      const next = upsertGame(list, game);
-      saveGames(next);
-      return next;
-    });
-  };
-
-  const setGame = (state: GameState, unlocked: string[][] | null = current?.unlocked ?? null) => {
-    if (current) storeGame({ ...current, state, unlocked, updatedAt: Date.now() });
-  };
-
-  const drawSuggestions = () => {
-    const result = draw(deck.current, SUGGESTIONS_PER_TURN, QUESTIONS.length);
-    deck.current = result.deck;
-    saveDeck(result.deck);
-    setSuggestions(result.picks);
-  };
-
-  const start = (players: Player[]) => {
-    const saved = newSavedGame(startGame(players, Math.floor(Math.random() * players.length)));
-    storeGame(saved);
-    setCurrentId(saved.id);
-    setView('game');
-  };
-
-  const startWithProfiles = (ids: string[]) =>
-    start(
-      ids
-        .map((id) => profiles.find((p) => p.id === id))
-        .filter((p): p is Profile => p !== undefined)
-        .map(({ id, name, avatar, color }) => ({ id, name, avatar, color })),
-    );
-
-  const open = (id: string) => {
-    const game = games.find((g) => g.id === id);
-    if (!game) return;
-    const resumed = resumeState(game.state);
-    if (resumed !== game.state) storeGame({ ...game, state: resumed });
-    setCurrentId(id);
-    setView('game');
-  };
-
-  const goHome = () => {
-    setHistoryOpen(false);
-    if (current) {
-      const resumed = resumeState(current.state);
-      if (resumed !== current.state) setGame(resumed);
-    }
-    setCurrentId(null);
-    setView('home');
-  };
-
-  const toggleMute = () => {
-    setMutedState(!muted);
-    setMuted(!muted);
-    saveMuted(!muted);
-  };
-
-  const vote = (state: GameState, picks: Record<string, number>) => {
-    const next = castVotes(state, picks);
-    if (next.phase !== 'ceremony') return setGame(next);
-    const update = recordGame(profiles, next, playerStats(next), awardResults(next));
-    updateProfiles(update.profiles);
-    setGame(next, update.unlocked);
-  };
-
-  if (!fontsLoaded || !loaded) {
-    return <View style={styles.loading} />;
-  }
-
-  let screen;
-  if (view === 'profiles') {
-    screen = <ProfilesScreen profiles={profiles} onBack={() => setView('home')} />;
-  } else if (view === 'new') {
-    screen = (
-      <NewGameScreen
-        profiles={profiles}
-        selected={selected}
-        onToggle={(id) => setSelected(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id])}
-        onCreate={(profile) => {
-          updateProfiles([...profiles, profile]);
-          setSelected([...selected, profile.id]);
-        }}
-        onBack={() => setView('home')}
-        onStart={() => startWithProfiles(selected)}
-      />
-    );
-  } else if (view === 'home' || !current) {
-    screen = (
-      <HomeScreen
-        games={games}
-        muted={muted}
-        onOpen={open}
-        onDelete={(id) =>
-          setGames((list) => {
-            const next = removeGame(list, id);
-            saveGames(next);
-            return next;
-          })
-        }
-        onNewGame={() => setView('new')}
-        onProfiles={() => setView('profiles')}
-        onMute={toggleMute}
-      />
-    );
-  } else {
-    const game = current.state;
-    const bar = <PlayerBar state={game} />;
-    const comment = (i: number, author: number, text: string) => setGame(addComment(game, i, author, text));
-    const reactTo = (i: number, emoji: string) => setGame(react(game, i, emoji));
-    let inner;
-
-    switch (game.phase) {
-      case 'handoff':
-        inner = (
-          <HandoffScreen
-            player={game.players[game.holder]}
-            lead={game.passes.length === 0 ? 'The lighter starts with' : 'Pass the lighter to'}
-            top={bar}
-            onReady={() => {
-              drawSuggestions();
-              setGame(beginTurn(game));
-            }}
-          />
-        );
-        break;
-      case 'turn':
-        inner = (
-          <TurnScreen
-            // A fresh key per turn clears the previous player's picks.
-            key={`${current.id}-${game.passes.length}`}
-            state={game}
-            suggestions={suggestions}
-            top={bar}
-            onShuffle={drawSuggestions}
-            onPass={(to, question) => setGame(passLighter(game, to, question))}
-            onAnswerLast={(answer) => setGame(answerLast(game, answer))}
-          />
-        );
-        break;
-      case 'gameover':
-        inner = <GameOverScreen state={game} onReveal={() => setGame(showRecap(game))} />;
-        break;
-      case 'recap':
-        inner = (
-          <RecapScreen
-            state={game}
-            onComment={comment}
-            onReact={reactTo}
-            onVote={() => setGame(startVoting(game, pickVotedCategories()))}
-          />
-        );
-        break;
-      case 'vote-handoff':
-        inner = (
-          <HandoffScreen
-            player={game.players[game.voter]}
-            lead={`Voter ${game.voter + 1} of ${game.players.length}`}
-            onReady={() => setGame(beginVote(game))}
-          />
-        );
-        break;
-      case 'vote':
-        inner = (
-          <VoteScreen
-            key={`${current.id}-${game.voter}`}
-            state={game}
-            onHistory={() => setHistoryOpen(true)}
-            onSubmit={(picks) => vote(game, picks)}
-          />
-        );
-        break;
-      case 'ceremony':
-        inner = (
-          <CeremonyScreen state={game} results={awardResults(game)} onDone={() => setGame(finishCeremony(game))} />
-        );
-        break;
-      case 'final':
-        inner = (
-          <FinalScreen
-            state={game}
-            results={awardResults(game)}
-            stats={playerStats(game)}
-            unlocked={current.unlocked ?? []}
-            onComment={comment}
-            onReact={reactTo}
-            onPlayAgain={() => start(game.players)}
-            onHome={goHome}
-          />
-        );
-        break;
-    }
-    screen = (
-      <View style={styles.fill}>
-        <GameHeader state={game} onHome={goHome} onHistory={() => setHistoryOpen(true)} />
-        {inner}
-        <HistorySheet state={game} visible={historyOpen} onClose={() => setHistoryOpen(false)} />
-      </View>
-    );
-  }
-
+  const [fontsLoaded] = useFonts({ LuckiestGuy_400Regular, Fredoka_500Medium, Fredoka_600SemiBold });
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safe}>
-        <Backdrop />
-        <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          {screen}
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+      <View style={styles.fill}>
+        {fontsLoaded && (
+          <StoreProvider>
+            <NavProvider>
+              <Router />
+              <Toast />
+            </NavProvider>
+          </StoreProvider>
+        )}
+      </View>
       <StatusBar style="light" />
     </SafeAreaProvider>
   );
 }
 
+function Router() {
+  const { route } = useNav();
+  return <View style={styles.fill}>{render(route)}</View>;
+}
+
+function render(route: Route) {
+  switch (route.name) {
+    case 'splash':
+      return <Splash />;
+    case 'tutorial':
+      return <Tutorial fromMenu={route.fromMenu} />;
+    case 'login':
+      return <Login />;
+    case 'menu':
+      return <MainMenu />;
+    case 'games':
+      return <GameList />;
+    case 'invite':
+      return <InviteFriends />;
+    case 'game':
+      return <GameScreen key={route.id} id={route.id} />;
+    case 'ask':
+      return <AskQuestion id={route.id} to={route.to} />;
+    case 'burn':
+      return <BurnQuestion id={route.id} index={route.index} revealed={route.revealed} missed={route.missed} />;
+    case 'progress':
+      return <GameProgress id={route.id} />;
+    case 'ad':
+      return <Advertisement id={route.id} index={route.index} />;
+    case 'settings':
+      return <Settings />;
+    case 'friends':
+      return <Friends />;
+  }
+}
+
+// Stands in for a push notification while the app is open.
+function Toast() {
+  const { toast, dismissToast } = useStore();
+  const nav = useNav();
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(dismissToast, TOAST_MS);
+    return () => clearTimeout(timer);
+    // The store hands out a new dismissToast every second; only a new toast restarts the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]);
+  if (!toast || nav.route.name === 'ad') return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        dismissToast();
+        nav.push({ name: 'game', id: toast.gameId });
+      }}
+      style={[styles.toast, { top: insets.top + 8 }]}
+    >
+      <Text style={styles.toastText}>🔥 {toast.text}</Text>
+      <Text style={styles.toastOpen}>OPEN</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    backgroundColor: colors.night,
-  },
-  safe: {
-    flex: 1,
-    backgroundColor: colors.night,
-  },
   fill: {
     flex: 1,
+    backgroundColor: colors.teal,
+  },
+  toast: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(20,20,24,0.95)',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: colors.yellow,
+  },
+  toastText: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.white,
+  },
+  toastOpen: {
+    fontFamily: fonts.comic,
+    fontSize: 18,
+    color: colors.yellow,
   },
 });
