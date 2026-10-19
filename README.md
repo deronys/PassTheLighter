@@ -2,12 +2,23 @@
 
 A party game for Android and iPhone, built with [Expo](https://expo.dev) (React Native, TypeScript) from a single codebase.
 
+## How to play
+
+Everyone sits together and shares one phone, which is the lighter.
+
+1. Enter the names of 4 or more players. A random player starts with the lighter.
+2. The holder picks who gets the lighter and writes them a secret question about the others in the group.
+3. The new holder reads the question and answers it by picking who gets the lighter next, without saying why. Then they write that player a new question.
+4. When a player gets the lighter for the third time, they answer their question and every question and answer is revealed.
+
 ## Run it
 
 ```bash
 npm install
 npx expo start
 ```
+
+Check your changes with `npm run typecheck` and `npm test`.
 
 Scan the QR code with the Expo Go app on an Android phone or iPhone.
 
