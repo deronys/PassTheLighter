@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
@@ -47,7 +48,7 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
       >
         <Text style={styles.stepLabel}>Step 2 of 2</Text>
         <View style={styles.askHeader}>
-          <Text style={common.heading}>Pick a card for</Text>
+          <Text style={common.heading}>Your question for</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${target.name}. Change who gets the lighter`}
@@ -59,7 +60,25 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
             <Text style={styles.changeIcon}>↺</Text>
           </Pressable>
         </View>
-        <QuestionDeck cards={suggestions} onDeal={onShuffle} onChange={setQuestion} />
+        <LinearGradient colors={['#4A3A6E', '#2A2045']} style={styles.ownCard}>
+          <View style={styles.ownTop}>
+            <Text style={styles.ownEmoji}>✏️</Text>
+            <Text style={styles.ownKicker}>Write it your way</Text>
+          </View>
+          <TextInput
+            style={styles.ownInput}
+            value={question}
+            onChangeText={setQuestion}
+            placeholder={`Ask ${target.name} anything…`}
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            multiline
+            maxLength={140}
+          />
+          <Text style={styles.ownCount}>{question.length}/140</Text>
+        </LinearGradient>
+
+        <Text style={styles.ideasLabel}>💡 Stuck? Grab an idea</Text>
+        <QuestionDeck cards={suggestions} onDeal={onShuffle} onUse={setQuestion} />
       </Screen>
     );
   }
@@ -161,6 +180,55 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 18,
     justifyContent: 'center',
+  },
+  ownCard: {
+    borderRadius: 24,
+    padding: 16,
+    gap: 8,
+    borderWidth: 3,
+    borderColor: colors.flame,
+    shadowColor: colors.flame,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  ownTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ownEmoji: {
+    fontSize: 20,
+  },
+  ownKicker: {
+    fontFamily: fonts.display,
+    fontSize: 14,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: colors.flame,
+  },
+  ownInput: {
+    minHeight: 96,
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    lineHeight: 28,
+    color: colors.text,
+    textAlignVertical: 'top',
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  ownCount: {
+    alignSelf: 'flex-end',
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.muted,
+  },
+  ideasLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.muted,
+    textAlign: 'center',
   },
   askHeader: {
     flexDirection: 'row',

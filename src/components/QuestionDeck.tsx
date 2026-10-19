@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -20,27 +19,23 @@ type Props = {
   // Question indexes dealt for this turn.
   cards: number[];
   onDeal: () => void;
-  // The question on the top card, or '' while the blank card is empty.
-  onChange: (question: string) => void;
+  // Called with the top card's question when the player picks it.
+  onUse: (question: string) => void;
 };
 
 const SWIPE_DISTANCE = 70;
-const BLANK = { name: 'Your own', emoji: '✏️', colors: ['#3A3350', '#1E1830'] as [string, string] };
 
-// A hand of question cards. Swipe or use the arrows to flip through them; the
-// card on top is the one you ask. The last card is blank for your own question.
-export function QuestionDeck({ cards, onDeal, onChange }: Props) {
+// A hand of idea cards. Swipe or use the arrows to flip through them, and tap
+// the top card (or "Use this one") to copy its question into your own.
+export function QuestionDeck({ cards, onDeal, onUse }: Props) {
   const { width } = useWindowDimensions();
-  const cardWidth = Math.min(320, width - 72);
-  const cardHeight = cardWidth * 1.15;
-  const count = cards.length + 1;
+  const cardWidth = Math.min(280, width - 96);
+  const cardHeight = cardWidth * 0.62;
+  const count = Math.max(cards.length, 1);
 
   const [top, setTop] = useState(0);
-  const [own, setOwn] = useState('');
   const dx = useRef(new Animated.Value(0)).current;
   const deal = useRef(new Animated.Value(0)).current;
-
-  const textOf = (position: number) => (position < cards.length ? QUESTIONS[cards[position]] : own.trim());
 
   // A new hand: reset to the first card and deal the cards in.
   useEffect(() => {
@@ -48,12 +43,6 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
     deal.setValue(0);
     Animated.timing(deal, { toValue: 1, duration: 650, easing: Easing.out(Easing.back(1.4)), useNativeDriver: nativeDriver }).start();
   }, [cards, deal]);
-
-  useEffect(() => {
-    onChange(textOf(top));
-    // textOf only depends on cards, own and top.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [top, own, cards]);
 
   // Ignore taps while a card is still flying off, so no flip gets lost.
   const flying = useRef(false);
@@ -67,6 +56,12 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
       flying.current = false;
     });
   };
+  const use = () => {
+    if (cards.length === 0) return;
+    play('pop');
+    onUse(QUESTIONS[cards[top]]);
+  };
+
   const flipRef = useRef(flip);
   flipRef.current = flip;
 
@@ -90,16 +85,15 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
   const rotate = dx.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-12deg', '0deg', '12deg'] });
 
   // The top card plus two peeking out behind it, drawn back to front.
-  const layers = [2, 1, 0].map((depth) => (top + depth) % count);
+  const layers = [2, 1, 0].filter((depth) => depth < count).map((depth) => (top + depth) % count);
 
   return (
     <View style={styles.wrap}>
-      <View style={{ width: cardWidth, height: cardHeight + 24 }}>
+      <View style={{ width: cardWidth, height: cardHeight + 20 }}>
         {layers.map((position, i) => {
-          const depth = 2 - i;
+          const depth = layers.length - 1 - i;
           const isTop = depth === 0;
-          const blank = position === cards.length;
-          const category = blank ? BLANK : categoryOf(cards[position]);
+          const category = categoryOf(cards[position] ?? 0);
           const dealIn = deal.interpolate({
             inputRange: [0, 0.15 * depth, 0.6 + 0.15 * depth, 1],
             outputRange: [400, 400, 0, 0],
@@ -107,7 +101,7 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
           });
           const transforms = isTop
             ? [{ translateY: dealIn }, { translateX: dx }, { rotate }]
-            : [{ translateY: Animated.add(dealIn, new Animated.Value(depth * 12)) }, { scale: 1 - depth * 0.05 }, { rotate: `${depth % 2 ? 4 : -3}deg` }];
+            : [{ translateY: Animated.add(dealIn, new Animated.Value(depth * 10)) }, { scale: 1 - depth * 0.05 }, { rotate: `${depth % 2 ? 4 : -3}deg` }];
 
           return (
             <Animated.View
@@ -115,32 +109,24 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
               {...(isTop ? pan.panHandlers : {})}
               style={[styles.card, { width: cardWidth, height: cardHeight, transform: transforms as never }]}
             >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={isTop ? `Use this question: ${QUESTIONS[cards[position] ?? 0]}` : undefined}
+                disabled={!isTop}
+                onPress={use}
+                style={styles.fill}
+              >
               <LinearGradient colors={category.colors} style={styles.cardFace}>
                 <View style={styles.cardTop}>
                   <Text selectable={false} style={styles.cornerEmoji}>{category.emoji}</Text>
                   <Text selectable={false} style={styles.category}>{category.name}</Text>
                 </View>
-                {blank ? (
-                  isTop ? (
-                    <TextInput
-                      style={styles.ownInput}
-                      value={own}
-                      onChangeText={setOwn}
-                      placeholder="Write your own question…"
-                      placeholderTextColor="rgba(255,255,255,0.55)"
-                      multiline
-                      maxLength={140}
-                    />
-                  ) : (
-                    <Text selectable={false} style={styles.question}>Write your own</Text>
-                  )
-                ) : (
-                  <Text selectable={false} style={styles.question} adjustsFontSizeToFit numberOfLines={6}>
-                    {QUESTIONS[cards[position]]}
-                  </Text>
-                )}
+                <Text selectable={false} style={styles.question} adjustsFontSizeToFit numberOfLines={4}>
+                  {QUESTIONS[cards[position] ?? 0]}
+                </Text>
                 <Text selectable={false} style={styles.bigEmoji}>{category.emoji}</Text>
               </LinearGradient>
+              </Pressable>
             </Animated.View>
           );
         })}
@@ -156,17 +142,25 @@ export function QuestionDeck({ cards, onDeal, onChange }: Props) {
         <RoundButton label="▶" accessibilityLabel="Next card" onPress={() => flip(1)} />
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          play('flick');
-          setOwn('');
-          onDeal();
-        }}
-        style={({ pressed }) => [styles.deal, pressed && styles.pressed]}
-      >
-        <Text style={styles.dealLabel}>🎲 Deal new cards</Text>
-      </Pressable>
+      <View style={styles.controls}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={use}
+          style={({ pressed }) => [styles.deal, styles.useButton, pressed && styles.pressed]}
+        >
+          <Text style={[styles.dealLabel, styles.useLabel]}>⬆ Use this one</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            play('flick');
+            onDeal();
+          }}
+          style={({ pressed }) => [styles.deal, pressed && styles.pressed]}
+        >
+          <Text style={styles.dealLabel}>🎲 New cards</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -194,20 +188,24 @@ const styles = StyleSheet.create({
     userSelect: 'none',
     top: 0,
     left: 0,
-    borderRadius: 26,
+    borderRadius: 22,
     shadowColor: '#000',
     shadowOpacity: 0.45,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
     elevation: 8,
   },
+  fill: {
+    flex: 1,
+  },
   cardFace: {
     flex: 1,
-    borderRadius: 26,
-    padding: 22,
+    borderRadius: 22,
+    padding: 16,
     borderWidth: 3,
     borderColor: 'rgba(255, 255, 255, 0.35)',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 8,
     overflow: 'hidden',
   },
   cardTop: {
@@ -216,38 +214,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cornerEmoji: {
-    fontSize: 22,
+    fontSize: 18,
   },
   category: {
     fontFamily: fonts.display,
-    fontSize: 15,
+    fontSize: 13,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: 'rgba(255, 255, 255, 0.85)',
   },
   question: {
     fontFamily: fonts.display,
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 21,
+    lineHeight: 26,
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowRadius: 6,
   },
-  ownInput: {
-    flex: 1,
-    marginVertical: 12,
-    fontFamily: fonts.bold,
-    fontSize: 22,
-    color: '#FFFFFF',
-    textAlignVertical: 'top',
-    borderRadius: 16,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-  },
   bigEmoji: {
     alignSelf: 'flex-end',
-    fontSize: 54,
-    opacity: 0.9,
+    position: 'absolute',
+    right: 12,
+    bottom: 8,
+    fontSize: 34,
+    opacity: 0.5,
   },
   controls: {
     flexDirection: 'row',
@@ -289,6 +279,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceStrong,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  useButton: {
+    backgroundColor: colors.flame,
+    borderColor: colors.flame,
+  },
+  useLabel: {
+    color: colors.onFlame,
   },
   dealLabel: {
     fontFamily: fonts.bold,

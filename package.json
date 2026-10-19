@@ -1,6 +1,6 @@
 {
   "name": "pass-the-lighter",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/luckiest-guy": "^0.4.1",

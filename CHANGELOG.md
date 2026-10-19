@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.5.1 - 2026-10-19
+
+- Writing your own question is now the main option: a big "Write it your way" card at the top of the question step.
+- The question cards move below it as optional ideas ("Stuck? Grab an idea"). Swipe through them and tap a card, or "Use this one", to copy its question into your own card, where you can still edit it.
+
 ## v0.5.0 - 2026-10-19
 
 - The question step is now a hand of question cards instead of a text list. Each turn deals 5 cards with a dealing animation. Every card has a colour and emoji for its category (Secrets, Trust, Embarrassing, Future, Survival, Personality, Party, Love, What if, Spicy).
