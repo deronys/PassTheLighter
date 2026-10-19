@@ -212,3 +212,30 @@ export const QUESTIONS: string[] = [
   'Who do you think is hardest to read?',
   'Who here has surprised you the most tonight?',
 ];
+
+// The pool is written in themed blocks of 20; each block is a card category.
+export type QuestionCategory = {
+  name: string;
+  emoji: string;
+  // Card gradient, top to bottom.
+  colors: [string, string];
+};
+
+export const QUESTION_CATEGORIES: QuestionCategory[] = [
+  { name: 'Secrets', emoji: '🤫', colors: ['#8E3BFF', '#4B1A9E'] },
+  { name: 'Trust', emoji: '🤝', colors: ['#2F8CFF', '#16438F'] },
+  { name: 'Embarrassing', emoji: '🙈', colors: ['#FF5E8A', '#9E1F4A'] },
+  { name: 'Future', emoji: '🔮', colors: ['#B85CFF', '#5A1F9E'] },
+  { name: 'Survival', emoji: '🏝️', colors: ['#20B486', '#0D5E45'] },
+  { name: 'Personality', emoji: '🎭', colors: ['#FF9F1C', '#A3540A'] },
+  { name: 'Party', emoji: '🎉', colors: ['#FF4FD8', '#8A1A78'] },
+  { name: 'Love', emoji: '💘', colors: ['#FF4F5E', '#93162A'] },
+  { name: 'What if', emoji: '🌀', colors: ['#1FC6D9', '#0B5F6E'] },
+  { name: 'Spicy', emoji: '🌶️', colors: ['#FF6A2B', '#9A2A08'] },
+];
+
+export const QUESTIONS_PER_CATEGORY = 20;
+
+export function categoryOf(questionIndex: number): QuestionCategory {
+  return QUESTION_CATEGORIES[Math.floor(questionIndex / QUESTIONS_PER_CATEGORY)];
+}

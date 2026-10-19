@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
 import { PopIn } from '../components/PopIn';
+import { QuestionDeck } from '../components/QuestionDeck';
 import { Screen } from '../components/Screen';
 import { play } from '../feedback';
 import { type GameState, incomingPass, isLastTurn } from '../game';
@@ -12,7 +12,8 @@ import { colors, common, fonts } from '../theme';
 
 type Props = {
   state: GameState;
-  suggestions: string[];
+  // Question indexes dealt for this turn.
+  suggestions: number[];
   top: React.ReactNode;
   onShuffle: () => void;
   onPass: (to: number, question: string) => void;
@@ -45,40 +46,20 @@ export function TurnScreen({ state, suggestions, top, onShuffle, onPass, onAnswe
         }
       >
         <Text style={styles.stepLabel}>Step 2 of 2</Text>
-        <PopIn>
-          <View style={[common.card, styles.target]}>
-            <Avatar player={target} size={56} showName={false} />
-            <View style={styles.targetText}>
-              <Text style={common.muted}>The lighter goes to</Text>
-              <Text style={common.heading}>{target.name}</Text>
-            </View>
-            <Pressable accessibilityRole="button" onPress={() => setStep('pick')} style={styles.change}>
-              <Text style={styles.changeLabel}>Change</Text>
-            </Pressable>
-          </View>
-        </PopIn>
-        <Text style={common.heading}>Your secret question for {target.name}</Text>
-        <Text style={common.muted}>Ask about the others in the group. They answer by passing the lighter on.</Text>
-        <TextInput
-          style={[common.input, styles.questionInput]}
-          value={question}
-          onChangeText={setQuestion}
-          placeholder="Who do you think…"
-          placeholderTextColor={colors.muted}
-          multiline
-          maxLength={200}
-        />
-        <View style={styles.suggestHeader}>
-          <Text style={common.muted}>Need an idea?</Text>
-          <Pressable accessibilityRole="button" onPress={onShuffle} style={styles.shuffle}>
-            <Text style={styles.shuffleLabel}>🎲 New ideas</Text>
+        <View style={styles.askHeader}>
+          <Text style={common.heading}>Pick a card for</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${target.name}. Change who gets the lighter`}
+            onPress={() => setStep('pick')}
+            style={styles.targetChip}
+          >
+            <Avatar player={target} size={30} showName={false} />
+            <Text style={styles.targetName}>{target.name}</Text>
+            <Text style={styles.changeIcon}>↺</Text>
           </Pressable>
         </View>
-        <View style={common.row}>
-          {suggestions.map((q) => (
-            <Chip key={q} label={q} selected={q === question} onPress={() => setQuestion(q)} />
-          ))}
-        </View>
+        <QuestionDeck cards={suggestions} onDeal={onShuffle} onChange={setQuestion} />
       </Screen>
     );
   }
@@ -181,43 +162,32 @@ const styles = StyleSheet.create({
     gap: 18,
     justifyContent: 'center',
   },
-  target: {
+  askHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  targetChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  targetText: {
-    flex: 1,
-  },
-  change: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 8,
+    paddingLeft: 4,
+    paddingRight: 12,
+    paddingVertical: 4,
     borderRadius: 999,
     backgroundColor: colors.surfaceStrong,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  changeLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    color: colors.text,
+  targetName: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    color: colors.flame,
   },
-  questionInput: {
-    minHeight: 88,
-    textAlignVertical: 'top',
-  },
-  suggestHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  shuffle: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceStrong,
-  },
-  shuffleLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    color: colors.text,
+  changeIcon: {
+    fontSize: 16,
+    color: colors.muted,
   },
 });

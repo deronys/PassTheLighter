@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { QUESTIONS } from './data/questions.ts';
+import { QUESTIONS, QUESTION_CATEGORIES, QUESTIONS_PER_CATEGORY, categoryOf } from './data/questions.ts';
 import { draw, newDeck } from './deck.ts';
 import {
   type Player,
@@ -196,4 +196,10 @@ test('saved games list keeps games in progress first and trims old finished game
   games = upsertGame(games, { ...active, updatedAt: 999, state: passLighter(beginTurn(active.state), 1, 'Q') });
   assert.equal(games.filter((g) => g.id === 'active').length, 1);
   assert.equal(removeGame(games, 'active').length, FINISHED_TO_KEEP);
+});
+
+test('every question belongs to a card category', () => {
+  assert.equal(QUESTION_CATEGORIES.length * QUESTIONS_PER_CATEGORY, QUESTIONS.length);
+  assert.equal(categoryOf(0).name, 'Secrets');
+  assert.equal(categoryOf(199).name, 'Spicy');
 });

@@ -2,6 +2,13 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.5.0 - 2026-10-19
+
+- The question step is now a hand of question cards instead of a text list. Each turn deals 5 cards with a dealing animation. Every card has a colour and emoji for its category (Secrets, Trust, Embarrassing, Future, Survival, Personality, Party, Love, What if, Spicy).
+- Swipe the top card or tap the arrows to flip through the hand; the card on top is the question you ask. Dots show which card you are on.
+- The last card is blank, for writing your own question.
+- A "Deal new cards" button deals a fresh hand. The person getting the lighter is shown at the top; tap them to change your pick.
+
 ## v0.4.0 - 2026-10-19
 
 From John's "Improvements V2" list (the items that work on one shared phone).

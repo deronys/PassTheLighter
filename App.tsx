@@ -57,7 +57,7 @@ export default function App() {
   const [view, setView] = useState<'home' | 'new' | 'profiles' | 'game'>('home');
   const [selected, setSelected] = useState<string[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<number[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function App() {
     const result = draw(deck.current, SUGGESTIONS_PER_TURN, QUESTIONS.length);
     deck.current = result.deck;
     saveDeck(result.deck);
-    setSuggestions(result.picks.map((i) => QUESTIONS[i]));
+    setSuggestions(result.picks);
   };
 
   const start = (players: Player[]) => {
