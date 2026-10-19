@@ -24,7 +24,7 @@ Scan the QR code with the Expo Go app on an Android phone or iPhone.
 
 ## Versions and rollback
 
-Every release is a git tag named with a semantic version (`v0.1.0`, `v0.2.0`, ...), and each one is listed in [CHANGELOG.md](CHANGELOG.md).
+Every release is saved on GitHub as a branch named `release/` plus its semantic version (`release/v0.1.0`, `release/v0.2.0`, ...), and each one is listed in [CHANGELOG.md](CHANGELOG.md). Release branches are never changed after they are created. Each release also has a git tag of the same version (`v0.1.0`), once it can be pushed.
 
 - `MAJOR` changes break saved data or the way the game plays.
 - `MINOR` adds features.
@@ -35,12 +35,12 @@ The version lives in `package.json` and `app.json` (`expo.version`); both are bu
 To look at or rebuild an older version:
 
 ```bash
-git checkout v0.1.0
+git checkout release/v0.1.0
 ```
 
 To roll `main` back to an older version while keeping the history:
 
 ```bash
-git revert --no-commit v0.1.0..HEAD
+git revert --no-commit release/v0.1.0..HEAD
 git commit -m "Roll back to v0.1.0"
 ```
