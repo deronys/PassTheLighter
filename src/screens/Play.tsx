@@ -8,7 +8,7 @@ import { type Deck, draw, newDeck } from '../deck';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, canSee, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
+import { type Game, canSee, isFinalPass, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
@@ -63,16 +63,21 @@ function BannerText({ name, line, size = 22 }: { name?: string; line: string; si
 // 08 and 10: you hold the lighter. Choose who gets it next.
 function HolderScreen({ game }: { game: Game }) {
   const nav = useNav();
-  const { me, user } = useStore();
+  const { me, user, pass } = useStore();
   const bar = useGameBar(game);
   const others = players(game).filter((p) => p !== me.id).map(user);
   const [selected, setSelected] = useState(0);
   const last = lastPass(game);
   const counts = receives(game);
   const reason = last ? reasonIndex(game, game.passes.length - 1) : undefined;
+  const target = others[selected];
+  // Their 3rd lighter ends the game, so there is no question to ask.
+  const final = isFinalPass(game, target.id);
 
-  const footer = (
-    <ComicButton label="PASS AND ASK!" sound="flick" onPress={() => nav.push({ name: 'ask', id: game.id, to: others[selected].id })} />
+  const footer = final ? (
+    <ComicButton label="FINAL PASS!" sound="flick" onPress={() => pass(game.id, target.id, '')} />
+  ) : (
+    <ComicButton label="PASS AND ASK!" sound="flick" onPress={() => nav.push({ name: 'ask', id: game.id, to: target.id })} />
   );
 
   return (
@@ -104,6 +109,11 @@ function HolderScreen({ game }: { game: Game }) {
       <View style={styles.picker}>
         <PlayerPicker users={others} counts={counts} selected={selected} onSelect={setSelected} />
       </View>
+      {final && (
+        <Text style={styles.finalHint}>
+          This is {firstName(target)}'s 3rd lighter: no question, the game ends and all secrets are revealed!
+        </Text>
+      )}
     </Screen>
   );
 }
@@ -306,6 +316,12 @@ const styles = StyleSheet.create({
     padding: 0,
     outlineStyle: 'none',
   } as object,
+  finalHint: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.yellow,
+    textAlign: 'center',
+  },
   takeBack: {
     minWidth: 280,
     marginTop: 10,

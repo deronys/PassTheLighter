@@ -156,15 +156,19 @@ export function passAndAsk(game: Game, from: string, to: string, question: strin
   if (game.holder !== from) throw new Error('Only the holder can pass the lighter');
   if (to === from) throw new Error("You can't pass the lighter to yourself");
   if (!players(game).includes(to)) throw new Error('That player is not in the game');
-  const text = question.trim();
-  if (!text) throw new Error('Write a question first');
+  // The pass that gives someone their last lighter ends the game, so it carries no question.
+  const text = isFinalPass(game, to) ? '' : question.trim();
+  if (!text && !isFinalPass(game, to)) throw new Error('Write a question first');
   const next = { ...game, holder: to, passes: [...game.passes, { from, to, question: text, at: now }], lastMoveAt: now };
   return receives(next)[to] >= LIGHTERS_TO_END ? finish(next, now) : next;
 }
 
+// Whether passing to this player gives them their last lighter and ends the game.
+export const isFinalPass = (game: Game, to: string) => (receives(game)[to] ?? 0) + 1 >= LIGHTERS_TO_END;
+
 // Ends the game: every question is revealed and voting opens.
 function finish(game: Game, now: number): Game {
-  return { ...game, status: 'finished', endedAt: now, lastMoveAt: now, categories: pickCategories(game.id, VOTE_CATEGORY_IDS) };
+  return { ...game, status: 'finished', holder: null, endedAt: now, lastMoveAt: now, categories: pickCategories(game.id, VOTE_CATEGORY_IDS) };
 }
 
 // Who got the lighter for the last time, if the game ended that way.

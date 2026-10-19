@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.10.1 - 2026-10-19
+
+- The pass that gives someone their 3rd lighter has no question: the button says "FINAL PASS!" and the game ends at once. The final pass shows as "3rd lighter. Game over!" in the reveal and the history.
+- Game Progress of a finished game says "The game is over" instead of showing who had the lighter.
+
 ## v0.10.0 - 2026-10-19
 
 Changes from John's "Improvements New Version V2".

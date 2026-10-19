@@ -8,6 +8,7 @@ import {
   addComment,
   castVotes,
   everyoneVoted,
+  isFinalPass,
   lastHolder,
   results,
   sendChat,
@@ -116,8 +117,11 @@ test('the game ends when someone gets the lighter for the third time', () => {
   g = passAndAsk(g, 'b', 'a', 'Q2', 4);
   g = passAndAsk(g, 'a', 'b', 'Q3', 5);
   assert.equal(g.status, 'active');
-  g = passAndAsk(g, 'b', 'a', 'Q4', 6);
+  assert.ok(isFinalPass(g, 'a'));
+  g = passAndAsk(g, 'b', 'a', '', 6);
   assert.equal(g.status, 'finished');
+  // The final pass carries no question.
+  assert.equal(g.passes[3].question, '');
   assert.equal(lastHolder(g), 'a');
   assert.equal(g.categories.length, 5);
   assert.equal(new Set(g.categories).size, 5);

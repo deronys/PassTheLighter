@@ -84,9 +84,13 @@ export function GameOver({ game }: { game: Game }) {
                   <Text style={styles.commentCountLabel}>💬 {comments.length}</Text>
                 </View>
               </View>
-              <SpeechBubble tail="top">
-                <BubbleText>{p.question}</BubbleText>
-              </SpeechBubble>
+              {p.question ? (
+                <SpeechBubble tail="top">
+                  <BubbleText>{p.question}</BubbleText>
+                </SpeechBubble>
+              ) : (
+                <FinalPass name={name(p.to)} />
+              )}
               {latest && (
                 <Text style={styles.latest} numberOfLines={1}>
                   <Text style={styles.latestName}>{name(latest.from)}: </Text>
@@ -98,6 +102,15 @@ export function GameOver({ game }: { game: Game }) {
         );
       })}
     </Screen>
+  );
+}
+
+// The last pass: no question, it just ends the game.
+export function FinalPass({ name }: { name: string }) {
+  return (
+    <View style={styles.final}>
+      <Text style={styles.finalText}>🔥 {name === 'You' ? 'Your' : `${name}'s`} 3rd lighter. Game over!</Text>
+    </View>
   );
 }
 
@@ -172,12 +185,18 @@ export function Comments({ id, index }: { id: string; index: number }) {
           <Arrow />
           <Avatar user={user(p.to)} size={56} label={name(p.to)} />
         </View>
-        <Text style={styles.asked}>
-          {name(p.from)} asked {p.to === me.id ? 'you' : name(p.to)}:
-        </Text>
-        <SpeechBubble tail="top">
-          <BubbleText>{p.question}</BubbleText>
-        </SpeechBubble>
+        {p.question ? (
+          <>
+            <Text style={styles.asked}>
+              {name(p.from)} asked {p.to === me.id ? 'you' : name(p.to)}:
+            </Text>
+            <SpeechBubble tail="top">
+              <BubbleText>{p.question}</BubbleText>
+            </SpeechBubble>
+          </>
+        ) : (
+          <FinalPass name={name(p.to)} />
+        )}
         {g.passes[index + 1] && (
           <Text style={styles.answer}>
             {name(p.to)} answered: <Text style={styles.answerName}>{name(g.passes[index + 1].to)}</Text>
@@ -400,6 +419,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.white,
     marginTop: 2,
+  },
+  final: {
+    backgroundColor: colors.red,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: colors.yellow,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  finalText: {
+    fontFamily: fonts.comic,
+    fontSize: 18,
+    color: colors.white,
+    textAlign: 'center',
+    ...comicShadow,
   },
   commentCount: {
     backgroundColor: 'rgba(255,255,255,0.12)',

@@ -203,9 +203,9 @@ export function GameProgress({ id }: { id: string }) {
             </View>
             <View style={styles.progressQuestion}>
               {seen ? (
-                <View style={styles.miniBubble}>
-                  <Text style={styles.miniText} numberOfLines={4}>
-                    {p.question}
+                <View style={[styles.miniBubble, !p.question && styles.miniFinal]}>
+                  <Text style={[styles.miniText, !p.question && styles.miniFinalText]} numberOfLines={4}>
+                    {p.question || '🔥 3rd lighter. Game over!'}
                   </Text>
                 </View>
               ) : (
@@ -393,6 +393,15 @@ const styles = StyleSheet.create({
     padding: 10,
     minHeight: 70,
     justifyContent: 'center',
+  },
+  miniFinal: {
+    backgroundColor: colors.red,
+    borderWidth: 2,
+    borderColor: colors.yellow,
+  },
+  miniFinalText: {
+    fontFamily: fonts.comic,
+    color: colors.white,
   },
   miniText: {
     fontFamily: fonts.body,
