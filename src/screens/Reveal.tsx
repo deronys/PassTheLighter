@@ -8,9 +8,9 @@ import { useNav } from '../nav';
 import { firstName } from '../online/demo';
 import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
+import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
-import { useFlames } from './Lobby';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -22,7 +22,7 @@ type BurnProps = { id: string; index: number; revealed?: boolean; missed?: boole
 export function BurnQuestion({ id, index, revealed, missed }: BurnProps) {
   const nav = useNav();
   const { game, me, user } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game(id));
   const [noAd, setNoAd] = useState(false);
   const [popup, setPopup] = useState(!!revealed);
   useEffect(() => setPopup(!!revealed), [revealed]);
@@ -57,7 +57,7 @@ export function BurnQuestion({ id, index, revealed, missed }: BurnProps) {
   );
 
   return (
-    <Screen title="BURN A QUESTION" onBack={nav.back} flames={flames} footer={footer}>
+    <Screen title="BURN A QUESTION" onBack={nav.back} footer={footer} {...bar}>
       {next ? (
         <PassBanner left={<Avatar user={user(next.from)} size={70} label={name(next.from)} />}>
           <Title size={22} color={colors.white}>
@@ -153,7 +153,7 @@ function RevealPopup({ visible, onClose, asker, target, question }: { visible: b
 export function GameProgress({ id }: { id: string }) {
   const nav = useNav();
   const { game, me, user } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game(id));
   const g = game(id);
   if (!g) {
     return (
@@ -167,7 +167,7 @@ export function GameProgress({ id }: { id: string }) {
   const rows = g.passes.map((p, i) => ({ p, i })).reverse();
 
   return (
-    <Screen title="GAME PROGRESS" onBack={nav.back} flames={flames}>
+    <Screen title="GAME PROGRESS" onBack={nav.back} {...bar} onLighters={undefined}>
       <Text style={styles.gameName}>{g.name.toUpperCase()}</Text>
       {holder?.id === me.id ? (
         // Back to the game screen, where you choose who gets the lighter.

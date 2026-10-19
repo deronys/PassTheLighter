@@ -14,7 +14,11 @@ export type Route =
   | { name: 'progress'; id: string }
   | { name: 'ad'; id: string; index: number }
   | { name: 'settings' }
-  | { name: 'friends' };
+  | { name: 'friends' }
+  | { name: 'chat'; id: string }
+  | { name: 'comments'; id: string; index: number }
+  | { name: 'vote'; id: string }
+  | { name: 'results'; id: string };
 
 type Nav = {
   route: Route;

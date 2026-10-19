@@ -5,15 +5,11 @@ import Svg, { Path } from 'react-native-svg';
 
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, MAX_PLAYERS, MIN_PLAYERS, canStart, players, roleOf, visibleTo } from '../online/rules';
+import { type Game, MAX_PLAYERS, MIN_PLAYERS, canStart, players, receives, roleOf, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
+import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, ComicButton, Panel, Screen, Title } from '../ui/kit';
-
-export function useFlames() {
-  const { state, me } = useStore();
-  return state.games.filter((g) => g.status === 'active' && g.holder === me.id && !g.hiddenFor.includes(me.id)).length;
-}
 
 export function ago(ms: number) {
   const min = Math.floor(ms / 60000);
@@ -38,18 +34,18 @@ const STATUS: Record<string, { label: string; color: string }> = {
 export function GameList() {
   const nav = useNav();
   const { state, me, user, now, remove } = useStore();
-  const flames = useFlames();
   const games = visibleTo(state.games, me.id);
 
   return (
-    <Screen title="GAME LIST" onBack={nav.back} flames={flames}>
+    <Screen title="GAME LIST" onBack={nav.back}>
       <View style={styles.center}>
         <ComicButton label="CREATE GAME" sound="flick" onPress={() => nav.push({ name: 'invite' })} style={styles.create} />
       </View>
       {games.length === 0 && <Text style={styles.empty}>No games yet. Create one and invite your friends!</Text>}
       {games.map((game, i) => {
         const host = user(game.hostId);
-        const status = STATUS[roleOf(game, me.id)];
+        const role = roleOf(game, me.id);
+        const status = role === 'finished' && !game.votes[me.id] && players(game).includes(me.id) ? { label: 'VOTE NOW!', color: colors.yellow } : STATUS[role];
         const hostOnRight = i % 2 === 1;
         const hostBlock = (
           <View style={styles.host}>
@@ -77,6 +73,11 @@ export function GameList() {
                 <Text style={styles.gameLine}>
                   Last move: <Text style={styles.gameValue}>{ago(now - game.lastMoveAt)}</Text>
                 </Text>
+                {game.status !== 'waiting' && (
+                  <Text style={styles.gameLine}>
+                    Your lighters: <Text style={styles.gameValue}>{receives(game)[me.id] ?? 0}</Text>
+                  </Text>
+                )}
                 <View style={styles.statusPill}>
                   <Text style={styles.gameLine}>
                     Game status: <Text style={{ color: status.color }}>{status.label}</Text>
@@ -118,7 +119,6 @@ const GAME_NAMES = ['Friday Night', 'Dirty Secrets', 'Truth Hour', 'Spill The Te
 export function InviteFriends() {
   const nav = useNav();
   const { state, create } = useStore();
-  const flames = useFlames();
   const [shown, setShown] = useState(8);
   const [picked, setPicked] = useState<string[]>([]);
   const [naming, setNaming] = useState(false);
@@ -141,7 +141,7 @@ export function InviteFriends() {
     <Screen
       title="INVITE FRIENDS"
       onBack={nav.back}
-      flames={flames}
+     
       scroll={false}
       footer={
         <View style={styles.row}>
@@ -238,7 +238,7 @@ const SEAT_STATUS = {
 export function WaitingRoom({ game }: { game: Game }) {
   const nav = useNav();
   const { me, user, start, respond } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game);
   const invited = roleOf(game, me.id) === 'invited';
   const isHost = game.hostId === me.id;
   const accepted = players(game).length;
@@ -261,7 +261,7 @@ export function WaitingRoom({ game }: { game: Game }) {
   ) : undefined;
 
   return (
-    <Screen title="WAITING ROOM" onBack={nav.back} flames={flames} footer={footer}>
+    <Screen title="WAITING ROOM" onBack={nav.back} footer={footer} {...bar}>
       {invited ? (
         <View style={styles.inviteHead}>
           <Avatar user={user(game.hostId)} size={80} label={firstName(user(game.hostId))} labelColor={colors.title} />

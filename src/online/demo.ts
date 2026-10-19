@@ -6,11 +6,14 @@ import { QUESTIONS } from '../data/questions.ts';
 import {
   type Game,
   type User,
+  addComment,
   canStart,
+  castVotes,
   createGame,
   passAndAsk,
   players,
   respond,
+  sendChat,
   startGame,
 } from './rules.ts';
 
@@ -23,6 +26,8 @@ export type DemoState = {
   seq: number;
   seenTutorial: boolean;
   settings: Settings;
+  // How many chat messages you have seen in each game, for the unread count.
+  chatSeen: Record<string, number>;
 };
 
 const COLORS = ['#E8452C', '#F2B705', '#2A9D8F', '#8E44AD', '#3A86FF', '#FF6F91', '#43AA8B', '#F3722C'];
@@ -65,7 +70,7 @@ const accepts = (g: Game, bot: string) => chance(`${g.id}:${bot}:yes`) < 0.85;
 const movesAt = (g: Game) => g.lastMoveAt + 2000 + chance(`${g.id}:${g.passes.length}:delay`) * 2000;
 
 export function newDemo(): DemoState {
-  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true } };
+  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true }, chatSeen: {} };
 }
 
 // Signing in creates your profile and a few games so the demo isn't empty.
@@ -86,6 +91,8 @@ export function signIn(state: DemoState, name: string, now: number): DemoState {
   friday = passAndAsk(friday, me.id, claire, q(61), now - 30 * minute);
   friday = passAndAsk(friday, claire, dimitris, q(3), now - 20 * minute);
   friday = passAndAsk(friday, dimitris, me.id, q(88), now - 3 * minute);
+  friday = sendChat(friday, claire, 'Who has the lighter now? 👀', now - 2 * minute);
+  friday = sendChat(friday, dimitris, 'Not telling 😏', now - minute);
 
   // Claire invites you.
   const secrets = respond(
@@ -101,7 +108,21 @@ export function signIn(state: DemoState, name: string, now: number): DemoState {
   late = passAndAsk(late, me.id, shea, q(23), now - 5 * minute);
   late = passAndAsk(late, shea, scarlet, q(101), now);
 
-  return { ...state, me, games: [friday, { ...secrets, startsAt: now + 2 * minute }, late], seq: 4 };
+  // A game that just ended, so the reveal, comments and voting can be tried right away.
+  let weekend = startGame(acceptAll(createGame('g4', 'Weekend Vibes', me.id, [scarlet, claire, kristen, shea], now - 30 * minute)), me.id, now - 29 * minute);
+  const moves: [string, string, number][] = [
+    [me.id, claire, 7],
+    [claire, kristen, 45],
+    [kristen, me.id, 66],
+    [me.id, scarlet, 120],
+    [scarlet, claire, 9],
+    [claire, shea, 140],
+    [shea, me.id, 33],
+  ];
+  moves.forEach(([from, to, qi], i) => (weekend = passAndAsk(weekend, from, to, q(qi), now - (25 - i * 3) * minute)));
+  weekend = sendChat(weekend, kristen, 'That last one was brutal 😂', now - 2 * minute);
+
+  return { ...state, me, games: [friday, { ...secrets, startsAt: now + 2 * minute }, late, weekend], seq: 5 };
 }
 
 function acceptAll(game: Game): Game {
@@ -138,10 +159,47 @@ export function tick(state: DemoState, now: number): DemoState {
       const to = others[Math.floor(chance(`${key}:to`) * others.length)];
       g = passAndAsk(g, g.holder, to, QUESTIONS[Math.floor(chance(`${key}:q`) * QUESTIONS.length)], now);
     }
+    g = botChat(state, g, now);
+    if (g.status === 'finished' && g.endedAt) g = botWrapUp(g, state, now);
     if (g !== game) changed = true;
     return g;
   });
   return changed ? { ...state, games } : state;
+}
+
+const CHAT_LINES = ['😂😂😂', 'No way!', 'I knew it 👀', 'Who asked that??', 'Hurry up with the lighter 🔥', "I'm not saying anything 🤐", 'This game is getting spicy 🌶️', 'Ok who wrote that question 😅'];
+const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
+
+// A bot answers when you write in the chat.
+function botChat(state: DemoState, g: Game, now: number): Game {
+  const last = g.chat[g.chat.length - 1];
+  if (!last || isBot(state, last.from)) return g;
+  const key = `${g.id}:chat:${g.chat.length}`;
+  if (now < last.at + 2000 + chance(key) * 2000) return g;
+  const bots = players(g).filter((p) => isBot(state, p));
+  if (!bots.length) return g;
+  const bot = bots[Math.floor(chance(`${key}:who`) * bots.length)];
+  return sendChat(g, bot, CHAT_LINES[Math.floor(chance(`${key}:line`) * CHAT_LINES.length)], now);
+}
+
+// After the game: bots comment on some revealed questions and vote.
+function botWrapUp(g: Game, state: DemoState, now: number): Game {
+  const ended = g.endedAt!;
+  const bots = players(g).filter((p) => isBot(state, p));
+  g.passes.forEach((_, i) => {
+    const key = `${g.id}:comment:${i}`;
+    if (chance(key) > 0.5 || now < ended + 3000 + i * 1500) return;
+    const bot = bots[Math.floor(chance(`${key}:who`) * bots.length)];
+    if (!bot || g.comments.some((c) => c.passIndex === i && c.from === bot)) return;
+    g = addComment(g, bot, i, ROASTS[Math.floor(chance(`${key}:text`) * ROASTS.length)], now);
+  });
+  for (const bot of bots) {
+    if (g.votes[bot] || now < ended + 2000 + chance(`${g.id}:${bot}:vote`) * 4000) continue;
+    const others = players(g).filter((p) => p !== bot);
+    const picks = Object.fromEntries(g.categories.map((c) => [c, others[Math.floor(chance(`${g.id}:${bot}:${c}`) * others.length)]]));
+    g = castVotes(g, bot, picks);
+  }
+  return g;
 }
 
 // For a notification: games where a bot just passed you the lighter.

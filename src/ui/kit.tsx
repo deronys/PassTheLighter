@@ -32,16 +32,20 @@ export const art = {
 type ScreenProps = {
   title?: string;
   onBack?: () => void;
-  // Games where you hold the lighter, shown on the flame badge.
-  flames?: number;
-  onFlames?: () => void;
+  // How many times you got the lighter in this game, on the lighter badge.
+  lighters?: number;
+  // Tapping the badge: the game's full history.
+  onLighters?: () => void;
+  // Shows the chat button, with the number of unread messages.
+  onChat?: () => void;
+  unread?: number;
   children: ReactNode;
   footer?: ReactNode;
   scroll?: boolean;
 };
 
 // The teal background, the red header and a pinned footer for the main buttons.
-export function Screen({ title, onBack, flames, onFlames, children, footer, scroll = true }: ScreenProps) {
+export function Screen({ title, onBack, lighters, onLighters, onChat, unread = 0, children, footer, scroll = true }: ScreenProps) {
   const insets = useSafeAreaInsets();
   // Without its own scroll, the body is held to the screen height so lists inside it can scroll.
   const body = <View style={[styles.body, !scroll && styles.bodyFixed]}>{children}</View>;
@@ -61,7 +65,7 @@ export function Screen({ title, onBack, flames, onFlames, children, footer, scro
               {title}
             </Text>
             <View style={[styles.headerSide, styles.headerRight]}>
-              {flames !== undefined && <FlameBadge count={flames} onPress={onFlames} />}
+              {lighters !== undefined && <LighterBadge count={lighters} onPress={onLighters} />}
             </View>
           </View>
         </ImageBackground>
@@ -74,6 +78,21 @@ export function Screen({ title, onBack, flames, onFlames, children, footer, scro
         <View style={[styles.fill, styles.scroll, styles.bodyFixed]}>{body}</View>
       )}
       {footer && <View style={[styles.footer, { paddingBottom: 14 + insets.bottom }]}>{footer}</View>}
+      {onChat && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={unread ? `Chat, ${unread} new` : 'Chat'}
+          onPress={onChat}
+          style={[styles.chatButton, { bottom: (footer ? 96 : 24) + insets.bottom }]}
+        >
+          <ChatIcon />
+          {unread > 0 && (
+            <View style={styles.unread}>
+              <Text style={styles.unreadLabel}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          )}
+        </Pressable>
+      )}
     </ImageBackground>
   );
 }
@@ -86,17 +105,32 @@ function BackArrow() {
   );
 }
 
-export function FlameBadge({ count, onPress }: { count: number; onPress?: () => void }) {
+// The lighter in the top right corner: how many times you got it in this game.
+export function LighterBadge({ count, onPress }: { count: number; onPress?: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`You hold the lighter in ${count} ${count === 1 ? 'game' : 'games'}`}
+      accessibilityLabel={`You got the lighter ${count} ${count === 1 ? 'time' : 'times'}. Show the game history`}
       onPress={onPress}
-      style={styles.flameBadge}
+      disabled={!onPress}
+      style={styles.lighterBadge}
     >
-      <Image source={art.flame} style={styles.flameBadgeFlame} resizeMode="contain" />
-      <Text style={styles.flameBadgeCount}>x{count}</Text>
+      <Image source={art.burst} style={styles.lighterBadgeArt} resizeMode="contain" />
+      <View style={styles.lighterBadgeCount}>
+        <Text style={styles.lighterBadgeLabel}>x{count}</Text>
+      </View>
     </Pressable>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <Svg width={34} height={32} viewBox="0 0 34 32">
+      <Path d="M4 3 h26 a3 3 0 0 1 3 3 v15 a3 3 0 0 1 -3 3 h-15 l-8 7 v-7 h-3 a3 3 0 0 1 -3 -3 v-15 a3 3 0 0 1 3 -3 z" fill={colors.white} />
+      <Circle cx={11} cy={13.5} r={2.5} fill={colors.red} />
+      <Circle cx={17} cy={13.5} r={2.5} fill={colors.red} />
+      <Circle cx={23} cy={13.5} r={2.5} fill={colors.red} />
+    </Svg>
   );
 }
 
@@ -186,9 +220,13 @@ export function Avatar({ user, size = 72, count, selected, lighter, label, label
           { width: size, height: size, borderRadius: radius, borderColor: selected ? colors.yellow : colors.white, borderWidth: selected ? 5 : 3 },
         ]}
       >
-        <LinearGradient colors={[user.color, shade(user.color)]} style={[styles.avatarFace, { borderRadius: radius - 3 }]}>
-          <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials(user.name)}</Text>
-        </LinearGradient>
+        {user.photo ? (
+          <Image source={{ uri: user.photo }} style={[styles.avatarFace, { borderRadius: radius - 3 }]} resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={[user.color, shade(user.color)]} style={[styles.avatarFace, { borderRadius: radius - 3 }]}>
+            <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials(user.name)}</Text>
+          </LinearGradient>
+        )}
         {lighter && <Image source={art.burst} style={[styles.avatarLighter, { width: size * 0.42, height: size * 0.62 }]} resizeMode="contain" />}
         {count !== undefined && (
           <View style={[styles.countBadge, { minWidth: size * 0.36, height: size * 0.36, borderRadius: size * 0.18 }]}>
@@ -379,28 +417,71 @@ const styles = StyleSheet.create({
     color: colors.title,
     ...comicShadow,
   },
-  flameBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3A0B05',
-    borderWidth: 3,
-    borderColor: '#8E1A0D',
+  lighterBadge: {
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  flameBadgeFlame: {
-    position: 'absolute',
-    width: 44,
-    height: 46,
-    top: 0,
+  lighterBadgeArt: {
+    width: 52,
+    height: 60,
   },
-  flameBadgeCount: {
+  lighterBadgeCount: {
+    position: 'absolute',
+    right: -4,
+    bottom: 0,
+    minWidth: 30,
+    height: 26,
+    borderRadius: 13,
+    paddingHorizontal: 5,
+    backgroundColor: colors.yellow,
+    borderWidth: 2,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lighterBadgeLabel: {
     fontFamily: fonts.comic,
-    fontSize: 17,
-    color: colors.white,
-    marginTop: 14,
-    ...comicShadow,
+    fontSize: 15,
+    color: colors.ink,
+    marginTop: 2,
+  },
+  chatButton: {
+    position: 'absolute',
+    right: 16,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: colors.red,
+    borderWidth: 3,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  unread: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.yellow,
+    borderWidth: 2,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadLabel: {
+    fontFamily: fonts.comic,
+    fontSize: 13,
+    color: colors.ink,
+    marginTop: 2,
   },
   scroll: {
     flexGrow: 1,

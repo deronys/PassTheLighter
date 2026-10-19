@@ -5,6 +5,12 @@ import { test } from 'node:test';
 import { newDemo, newlyPassedToYou, signIn, tick } from './demo.ts';
 import {
   INVITE_WINDOW_MS,
+  addComment,
+  castVotes,
+  everyoneVoted,
+  lastHolder,
+  results,
+  sendChat,
   burn,
   canSee,
   canStart,
@@ -90,7 +96,7 @@ test('the demo seeds games and the bots play on their own', () => {
   const friday = state.games.find((g) => g.name === 'Friday Quizzz')!;
   assert.equal(roleOf(friday, 'me'), 'holder');
   assert.equal(roleOf(state.games.find((g) => g.name === 'Dirty Secrets')!, 'me'), 'invited');
-  assert.equal(tick(state, now), state);
+  assert.equal(tick(state, now).games.find((g) => g.name === 'Friday Quizzz'), friday);
   let later = state;
   for (let t = now; t <= now + 120_000; t += 1000) later = tick(later, t);
   const late = later.games.find((g) => g.name === 'Late Night Truths')!;
@@ -98,4 +104,59 @@ test('the demo seeds games and the bots play on their own', () => {
   // Bots never move a game you hold.
   assert.equal(later.games.find((g) => g.name === 'Friday Quizzz')!.passes.length, friday.passes.length);
   assert.ok(Array.isArray(newlyPassedToYou(state, later)));
+  // In the finished game every bot has voted and you are the one left.
+  const weekend = later.games.find((g) => g.name === 'Weekend Vibes')!;
+  assert.equal(weekend.status, 'finished');
+  assert.deepEqual(Object.keys(weekend.votes).sort(), players(weekend).filter((p) => p !== 'me').sort());
+});
+
+test('the game ends when someone gets the lighter for the third time', () => {
+  let g = started();
+  g = passAndAsk(g, 'a', 'b', 'Q1', 3);
+  g = passAndAsk(g, 'b', 'a', 'Q2', 4);
+  g = passAndAsk(g, 'a', 'b', 'Q3', 5);
+  assert.equal(g.status, 'active');
+  g = passAndAsk(g, 'b', 'a', 'Q4', 6);
+  assert.equal(g.status, 'finished');
+  assert.equal(lastHolder(g), 'a');
+  assert.equal(g.categories.length, 5);
+  assert.equal(new Set(g.categories).size, 5);
+  // Everything is revealed to everyone.
+  assert.ok([0, 1, 2, 3].every((i) => canSee(g, i, 'd')));
+  assert.throws(() => passAndAsk(g, 'a', 'c', 'Q5', 7));
+});
+
+function finished() {
+  let g = started();
+  for (const [from, to] of [['a', 'b'], ['b', 'a'], ['a', 'b'], ['b', 'a']]) g = passAndAsk(g, from, to, 'Q', 3);
+  return g;
+}
+
+test('chat works in every phase and comments open at the end', () => {
+  let g = createGame('g', 'Test', 'a', ['b', 'c', 'd'], 0);
+  g = sendChat(g, 'a', ' hi ', 1);
+  assert.deepEqual(g.chat, [{ from: 'a', text: 'hi', at: 1 }]);
+  assert.throws(() => addComment(started(), 'a', 0, 'lol', 2));
+  const f = addComment(finished(), 'c', 1, 'Busted', 9);
+  assert.equal(f.comments[0].text, 'Busted');
+});
+
+test('players vote in every category, never for themselves, and the most voted is champion', () => {
+  let g = finished();
+  const [c1, c2, c3, c4, c5] = g.categories;
+  const all = (who: string) => Object.fromEntries(g.categories.map((c) => [c, who]));
+  assert.throws(() => castVotes(g, 'a', all('a')));
+  assert.throws(() => castVotes(g, 'a', { [c1]: 'b' }));
+  g = castVotes(g, 'a', all('b'));
+  assert.throws(() => castVotes(g, 'a', all('c')));
+  g = castVotes(g, 'b', { [c1]: 'c', [c2]: 'c', [c3]: 'c', [c4]: 'd', [c5]: 'd' });
+  g = castVotes(g, 'c', all('b'));
+  assert.ok(!everyoneVoted(g));
+  g = castVotes(g, 'd', all('c'));
+  assert.ok(everyoneVoted(g));
+  const r = results(g);
+  assert.equal(r.totals.b, 10);
+  assert.equal(r.totals.c, 8);
+  assert.deepEqual(r.champions, ['b']);
+  assert.deepEqual(r.winners[c1], ['b', 'c']);
 });

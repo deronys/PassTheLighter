@@ -14,7 +14,9 @@ import { colors, comicShadow, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
 import { QuestionDeck } from '../ui/QuestionDeck';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, PassBanner, QuestionCoin, Screen, SpeechBubble, Tag, Title } from '../ui/kit';
-import { WaitingRoom, useFlames } from './Lobby';
+import { WaitingRoom } from './Lobby';
+import { GameOver } from './End';
+import { useGameBar } from './gameBar';
 
 // Picks the screen for a game from where you stand in it.
 export function GameScreen({ id }: { id: string }) {
@@ -33,7 +35,7 @@ export function GameScreen({ id }: { id: string }) {
     case 'watcher':
       return <GameStatus game={g} />;
     default:
-      return <Finished game={g} />;
+      return <GameOver game={g} />;
   }
 }
 
@@ -62,7 +64,7 @@ function BannerText({ name, line, size = 22 }: { name?: string; line: string; si
 function HolderScreen({ game }: { game: Game }) {
   const nav = useNav();
   const { me, user } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game);
   const others = players(game).filter((p) => p !== me.id).map(user);
   const [selected, setSelected] = useState(0);
   const last = lastPass(game);
@@ -74,7 +76,7 @@ function HolderScreen({ game }: { game: Game }) {
   );
 
   return (
-    <Screen title={last ? 'YOU GOT IT!' : 'PASS THE LIGHTER'} onBack={nav.back} flames={flames} footer={footer}>
+    <Screen title={last ? 'YOU GOT IT!' : 'PASS THE LIGHTER'} onBack={nav.back} footer={footer} {...bar}>
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
       {last ? (
         <>
@@ -121,7 +123,7 @@ function dealSuggestions(): number[] {
 export function AskQuestion({ id, to }: { id: string; to: string }) {
   const nav = useNav();
   const { game, me, user, pass } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game(id));
   const [question, setQuestion] = useState('');
   const [cards, setCards] = useState(dealSuggestions);
   const target = user(to);
@@ -141,7 +143,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
 
   return (
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen title="ASK A QUESTION" onBack={nav.back} flames={flames}>
+      <Screen title="ASK A QUESTION" onBack={nav.back} {...bar}>
         <PassBanner left={<Avatar user={me} size={70} label="You" />} right={<Avatar user={target} size={70} lighter label={firstName(target)} />} burst={false}>
           <BannerText line="YOU PASS THE LIGHTER TO" size={20} />
         </PassBanner>
@@ -179,15 +181,16 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
 function PlayerStatus({ game }: { game: Game }) {
   const nav = useNav();
   const { me, user } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game);
   const last = lastPass(game)!;
   const to = user(last.to);
 
   return (
     <Screen
+      {...bar}
       title="GAME STATUS"
       onBack={nav.back}
-      flames={flames}
+     
       footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
     >
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
@@ -211,15 +214,16 @@ function PlayerStatus({ game }: { game: Game }) {
 function GameStatus({ game }: { game: Game }) {
   const nav = useNav();
   const { me, user } = useStore();
-  const flames = useFlames();
+  const bar = useGameBar(game);
   const index = game.passes.length - 1;
   const last = game.passes[index];
 
   return (
     <Screen
+      {...bar}
       title="GAME STATUS"
       onBack={nav.back}
-      flames={flames}
+     
       footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
     >
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
@@ -248,33 +252,6 @@ function GameStatus({ game }: { game: Game }) {
         </PassBanner>
       )}
       <Text style={styles.hint}>Waiting for {firstName(user(game.holder!))} to pass the lighter.</Text>
-    </Screen>
-  );
-}
-
-function Finished({ game }: { game: Game }) {
-  const nav = useNav();
-  const { user } = useStore();
-  const counts = receives(game);
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return (
-    <Screen
-      title="GAME OVER"
-      onBack={nav.back}
-      footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
-    >
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
-      <PassBanner>
-        <BannerText line={`THE LIGHTER WENT OUT AFTER ${game.passes.length} PASSES`} size={22} />
-      </PassBanner>
-      {top && (
-        <View style={styles.center}>
-          <Title size={24} style={styles.section}>
-            MOST WANTED
-          </Title>
-          <Avatar user={user(top[0])} size={100} count={top[1]} selected label={user(top[0]).name} labelColor={colors.title} />
-        </View>
-      )}
     </Screen>
   );
 }

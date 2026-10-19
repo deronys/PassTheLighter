@@ -60,6 +60,7 @@ const TUTORIAL = [
   { title: 'PASS AND ASK', text: 'Pass the lighter to a friend and ask them a secret question. Only they can read it.' },
   { title: 'ANSWER WITH THE LIGHTER', text: 'To answer your question, pass the lighter to the friend who is your answer, and ask them a new one. Never say why!' },
   { title: 'BURN THE QUESTION', text: 'Got the lighter and dying to know why? Burn the hidden question to reveal it.' },
+  { title: 'CROWN THE CHAMPION', text: 'When someone gets the lighter for the third time, the game ends and every secret is revealed. Comment on them, vote for the awards and crown the Lighter Champion!' },
 ];
 
 export function Tutorial({ fromMenu }: { fromMenu?: boolean }) {

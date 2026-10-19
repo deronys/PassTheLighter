@@ -10,7 +10,10 @@ Each player plays on their own phone, online with their friends. This build is a
 2. Whoever holds the lighter passes it to a friend and asks them a secret question: their own, or one of the suggested question cards. Only that friend can read it.
 3. The friend answers by passing the lighter to the person who is their answer, never saying why, and asks them a new question.
 4. Everyone else sees only "Question hidden". Watching an ad burns a hidden question and reveals it. "Learn why" shows the question that got the lighter passed to you.
-5. Once passed, the lighter can't be taken back. Game Progress lists every pass, numbered in order.
+5. Once passed, the lighter can't be taken back. Game Progress lists every pass, numbered in order; tap the lighter in the top right corner (it shows how many times you got it) to open it.
+6. The game ends when someone gets the lighter for the third time. Every question is revealed, players comment on them and vote in 5 random award categories (never for themselves). The player with the most votes in total is the Lighter Champion.
+
+Every game has its own chat, open before, during and after the game. Players can add a profile picture in Settings.
 
 The screens follow John's final designs and `Screens_Flow_revised.md`.
 
@@ -20,7 +23,8 @@ The screens follow John's final designs and `Screens_Flow_revised.md`.
 - `src/online/demo.ts`: the demo server: friends, sample games and the computer players' moves. `src/online/store.tsx` keeps that state on the phone and gives the screens their actions. A real backend (Firebase, Facebook and Google sign-in, AdMob) will sit behind the same actions.
 - `src/nav.tsx`: the screen stack. `src/screens/`: Entry (welcome, how to play, login, menu), Lobby (game list, invite, waiting room), Play (pass, ask, game status), Reveal (burn, game progress, ad) and Extras (settings, friends).
 - `src/ui/kit.tsx`: the painted header, comic buttons, speech bubbles, hidden ticket and the rest. `src/ui/QuestionDeck.tsx`: the suggested question cards. `assets/art/`: art cut from the designs.
-- `src/data/questions.ts`: the 200 suggested questions.
+- `src/screens/End.tsx`: game over, comments, voting and results. `src/screens/Chat.tsx`: the game chat. `src/photo.ts`: picking and shrinking a profile picture.
+- `src/data/questions.ts`: the 200 suggested questions. `src/data/awards.ts`: the award categories (add one and it can come up in games).
 
 ## Run it
 

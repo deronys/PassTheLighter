@@ -6,9 +6,10 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, 
 
 import { setMuted } from '../feedback';
 import { type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
-import { type Game, type User, burn, createGame, passAndAsk, removeFor, respond, startGame } from './rules';
+import { type Game, type User, addComment, burn, castVotes, createGame, passAndAsk, removeFor, respond, sendChat, startGame } from './rules';
 
-const KEY = 'ptl.demo.v1';
+// v2 started everyone's demo over (John asked for fresh test games in v0.10.0).
+const KEY = 'ptl.demo.v2';
 
 type Store = {
   ready: boolean;
@@ -31,6 +32,12 @@ type Store = {
   pass: (gameId: string, to: string, question: string) => void;
   burn: (gameId: string, passIndex: number) => void;
   remove: (gameId: string) => void;
+  chat: (gameId: string, text: string) => void;
+  // Marks a game's chat as read.
+  seeChat: (gameId: string) => void;
+  comment: (gameId: string, passIndex: number, text: string) => void;
+  vote: (gameId: string, picks: Record<string, string>) => void;
+  setPhoto: (photo: string | undefined) => void;
 };
 
 const Context = createContext<Store | null>(null);
@@ -112,6 +119,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       pass: (id, to, question) => onGame(id, (g, u) => passAndAsk(g, u, to, question, Date.now())),
       burn: (id, index) => onGame(id, (g, u) => burn(g, index, u)),
       remove: (id) => onGame(id, (g, u) => removeFor(g, u, Date.now())),
+      chat: (id, text) => onGame(id, (g, u) => sendChat(g, u, text, Date.now())),
+      seeChat: (id) =>
+        update((s) => {
+          const n = s.games.find((g) => g.id === id)?.chat.length ?? 0;
+          return s.chatSeen[id] === n ? s : { ...s, chatSeen: { ...s.chatSeen, [id]: n } };
+        }),
+      comment: (id, index, text) => onGame(id, (g, u) => addComment(g, u, index, text, Date.now())),
+      vote: (id, picks) => onGame(id, (g, u) => castVotes(g, u, picks)),
+      setPhoto: (photo) => update((s) => (s.me ? { ...s, me: { ...s.me, photo } } : s)),
     };
   }, [state, ready, now, toast]);
 

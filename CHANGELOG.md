@@ -2,6 +2,19 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.10.0 - 2026-10-19
+
+Changes from John's "Improvements New Version V2".
+
+- The game ends when someone gets the lighter for the third time (bug fix).
+- At the end every question is revealed to everyone, numbered in order, and players can comment on each one (one-tap roasts or their own words).
+- Voting in 5 random award categories, the same for everyone in a game. Players can't vote for themselves. The Lighter Champion is whoever got the most votes in total.
+- A chat for each game, open in every phase: waiting room, while playing and after the game. The chat button shows unread messages.
+- The top right corner shows a lighter with how many times you got it in that game. Tap it for the game's full history. The game list shows your lighters per game too, and "VOTE NOW!" on games waiting for your vote.
+- Profile pictures: add, change or remove yours in Settings.
+- How to play has a new last page about the end of the game.
+- The demo starts over with fresh test games, including a finished game to try the reveal, comments and voting right away. Demo friends chat back, comment and vote on their own.
+
 ## v0.9.0 - 2026-10-19
 
 Changes from John's "Improvements New Version V1".

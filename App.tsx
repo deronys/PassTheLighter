@@ -9,6 +9,8 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 
 import { NavProvider, type Route, useNav } from './src/nav';
 import { StoreProvider, useStore } from './src/online/store';
+import { Chat } from './src/screens/Chat';
+import { Comments, Results, Vote } from './src/screens/End';
 import { Login, MainMenu, Splash, Tutorial } from './src/screens/Entry';
 import { Friends, Settings } from './src/screens/Extras';
 import { GameList, InviteFriends } from './src/screens/Lobby';
@@ -70,6 +72,14 @@ function render(route: Route) {
       return <Settings />;
     case 'friends':
       return <Friends />;
+    case 'chat':
+      return <Chat id={route.id} />;
+    case 'comments':
+      return <Comments id={route.id} index={route.index} />;
+    case 'vote':
+      return <Vote id={route.id} />;
+    case 'results':
+      return <Results id={route.id} />;
   }
 }
 

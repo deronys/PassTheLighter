@@ -1,6 +1,6 @@
 {
   "name": "pass-the-lighter",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
@@ -11,6 +11,8 @@
     "expo-audio": "~58.0.9",
     "expo-font": "~58.0.8",
     "expo-haptics": "~58.0.7",
+    "expo-image-manipulator": "~58.0.14",
+    "expo-image-picker": "~58.0.10",
     "expo-linear-gradient": "~58.0.3",
     "expo-status-bar": "~58.0.3",
     "react": "19.3.0",

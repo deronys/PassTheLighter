@@ -6,10 +6,18 @@
 // asks them a question. Picking that friend is also the answer to the question
 // the holder was asked. The receiver sees the question asked to them, but not
 // the one they were the answer to; they can burn it (by watching an ad) to
-// find out why they got the lighter.
+// find out why they got the lighter. The game ends when someone gets the
+// lighter for the third time: every question is revealed, players comment on
+// them and vote in 5 award categories, and the most voted player is champion.
+
+import { VOTE_CATEGORY_IDS } from '../data/awards.ts';
 
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 12;
+// The game ends when someone gets the lighter this many times.
+export const LIGHTERS_TO_END = 3;
+// Award categories voted on at the end of each game.
+export const CATEGORIES_PER_GAME = 5;
 // How long invitations stay open in the waiting room.
 export const INVITE_WINDOW_MS = 2 * 60 * 1000;
 
@@ -17,6 +25,8 @@ export type User = {
   id: string;
   name: string;
   color: string;
+  // A profile picture as a URI (a small JPEG data URI in the demo).
+  photo?: string;
 };
 
 export type InviteStatus = 'invited' | 'accepted' | 'declined';
@@ -31,6 +41,20 @@ export type Pass = {
   to: string;
   // Asked by `from` to `to`. `to` answers it by passing the lighter on.
   question: string;
+  at: number;
+};
+
+export type ChatMessage = {
+  from: string;
+  text: string;
+  at: number;
+};
+
+// A comment on a revealed pass, once the game is over.
+export type Comment = {
+  from: string;
+  passIndex: number;
+  text: string;
   at: number;
 };
 
@@ -53,6 +77,15 @@ export type Game = {
   lastMoveAt: number;
   // Users who removed the game from their list.
   hiddenFor: string[];
+  // The game's chat, open in every phase.
+  chat: ChatMessage[];
+  // When the game ended, and what happens after: comments and award votes.
+  endedAt?: number;
+  comments: Comment[];
+  // The award categories to vote on, picked when the game ends.
+  categories: string[];
+  // voter -> category -> who they voted for.
+  votes: Record<string, Record<string, string>>;
 };
 
 // What a user sees when they open a game.
@@ -81,6 +114,10 @@ export function createGame(id: string, name: string, host: string, invited: stri
     burned: {},
     lastMoveAt: now,
     hiddenFor: [],
+    chat: [],
+    comments: [],
+    categories: [],
+    votes: {},
   };
 }
 
@@ -121,12 +158,35 @@ export function passAndAsk(game: Game, from: string, to: string, question: strin
   if (!players(game).includes(to)) throw new Error('That player is not in the game');
   const text = question.trim();
   if (!text) throw new Error('Write a question first');
-  return {
-    ...game,
-    holder: to,
-    passes: [...game.passes, { from, to, question: text, at: now }],
-    lastMoveAt: now,
+  const next = { ...game, holder: to, passes: [...game.passes, { from, to, question: text, at: now }], lastMoveAt: now };
+  return receives(next)[to] >= LIGHTERS_TO_END ? finish(next, now) : next;
+}
+
+// Ends the game: every question is revealed and voting opens.
+function finish(game: Game, now: number): Game {
+  return { ...game, status: 'finished', endedAt: now, lastMoveAt: now, categories: pickCategories(game.id, VOTE_CATEGORY_IDS) };
+}
+
+// Who got the lighter for the last time, if the game ended that way.
+export function lastHolder(game: Game): string | undefined {
+  const last = lastPass(game);
+  return game.status === 'finished' && last && receives(game)[last.to] >= LIGHTERS_TO_END ? last.to : undefined;
+}
+
+// The same categories for every player in a game: a shuffle seeded by the game id.
+export function pickCategories(seed: string, ids: string[], count = CATEGORIES_PER_GAME): string[] {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  const random = () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    return (h % 100000) / 100000;
   };
+  const pool = [...ids];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
 }
 
 export const lastPass = (game: Game): Pass | undefined => game.passes[game.passes.length - 1];
@@ -141,10 +201,11 @@ export function roleOf(game: Game, user: string): Role {
 }
 
 // You see a question if you asked it, it was asked to you, or you burned it.
+// When the game is over, everything is revealed.
 export function canSee(game: Game, passIndex: number, user: string): boolean {
   const pass = game.passes[passIndex];
   if (!pass) return false;
-  return pass.from === user || pass.to === user || (game.burned[user] ?? []).includes(passIndex);
+  return game.status === 'finished' || pass.from === user || pass.to === user || (game.burned[user] ?? []).includes(passIndex);
 }
 
 // The question the holder was the answer to: the one asked before the pass
@@ -169,7 +230,71 @@ export function receives(game: Game): Record<string, number> {
 
 export function endGame(game: Game, user: string, now: number): Game {
   if (user !== game.hostId) throw new Error('Only the host can end the game');
-  return { ...game, status: 'finished', holder: null, lastMoveAt: now };
+  return finish(game, now);
+}
+
+const isPlayer = (game: Game, user: string) => players(game).includes(user);
+
+export function sendChat(game: Game, from: string, text: string, now: number): Game {
+  const t = text.trim();
+  if (!t) return game;
+  if (!isPlayer(game, from)) throw new Error('Only players can chat');
+  return { ...game, chat: [...game.chat, { from, text: t, at: now }] };
+}
+
+export function addComment(game: Game, from: string, passIndex: number, text: string, now: number): Game {
+  const t = text.trim();
+  if (game.status !== 'finished') throw new Error('Comments open when the game is over');
+  if (!game.passes[passIndex]) throw new Error('No such question');
+  if (!t) return game;
+  return { ...game, comments: [...game.comments, { from, passIndex, text: t, at: now }] };
+}
+
+// One vote per category. Nobody can vote for themselves.
+export function castVotes(game: Game, voter: string, picks: Record<string, string>): Game {
+  if (game.status !== 'finished') throw new Error('Voting opens when the game is over');
+  if (!isPlayer(game, voter)) throw new Error('Only players can vote');
+  if (game.votes[voter]) throw new Error('You have already voted');
+  for (const c of game.categories) {
+    const pick = picks[c];
+    if (!pick) throw new Error('Vote in every category');
+    if (pick === voter) throw new Error("You can't vote for yourself");
+    if (!isPlayer(game, pick)) throw new Error('That player is not in the game');
+  }
+  return { ...game, votes: { ...game.votes, [voter]: Object.fromEntries(game.categories.map((c) => [c, picks[c]])) } };
+}
+
+export const everyoneVoted = (game: Game) => players(game).every((p) => game.votes[p]);
+
+export type Results = {
+  // category -> player -> votes
+  byCategory: Record<string, Record<string, number>>;
+  // category -> winners (ties share it)
+  winners: Record<string, string[]>;
+  // player -> votes over all categories
+  totals: Record<string, number>;
+  // The Lighter Champion: most votes in total, even without winning a category. Ties share it.
+  champions: string[];
+};
+
+export function results(game: Game): Results {
+  const byCategory: Results['byCategory'] = {};
+  const totals: Results['totals'] = Object.fromEntries(players(game).map((p) => [p, 0]));
+  for (const c of game.categories) byCategory[c] = {};
+  for (const picks of Object.values(game.votes)) {
+    for (const c of game.categories) {
+      const p = picks[c];
+      if (!p) continue;
+      byCategory[c][p] = (byCategory[c][p] ?? 0) + 1;
+      totals[p] = (totals[p] ?? 0) + 1;
+    }
+  }
+  const top = (counts: Record<string, number>) => {
+    const max = Math.max(0, ...Object.values(counts));
+    return max === 0 ? [] : Object.keys(counts).filter((p) => counts[p] === max);
+  };
+  const winners = Object.fromEntries(game.categories.map((c) => [c, top(byCategory[c])]));
+  return { byCategory, winners, totals, champions: top(totals) };
 }
 
 // Removing a game from your list. The host's X ends the game for everyone.
