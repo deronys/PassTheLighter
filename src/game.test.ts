@@ -103,11 +103,26 @@ test('every player votes in the same categories, then the ceremony starts', () =
   assert.deepEqual(
     results.map((r) => [r.category.id, r.winners, r.score]),
     [
-      ['champion', [1], 3],
       ['mvp', [2], 3],
       ['liar', [0, 1, 2, 3], 1],
+      ['champion', [2], 4],
     ],
   );
+});
+
+test('the champion has the most votes in total, even without winning an award', () => {
+  const base = finishedGame();
+  const players = [0, 1, 2, 3, 4, 5].map((i) => ({ ...base.players[0], id: `p${i}`, name: `P${i}` }));
+  // In each award one player gets 3 votes and player 3 gets 2.
+  const votes = (['creative', 'sneaky', 'liar'] as const).flatMap((category, i) => [
+    ...[0, 1, 2].map((voter) => ({ voter, category, nominee: i === 0 ? 0 : i === 1 ? 1 : 2 })),
+    ...[4, 5].map((voter) => ({ voter, category, nominee: 3 })),
+  ]);
+  const state = { ...base, players, receives: [0, 0, 0, 0, 0, 0], categories: ['creative', 'sneaky', 'liar'], votes };
+  const results = awardResults(state);
+  assert.ok(results.slice(0, 3).every((r) => !r.winners.includes(3)));
+  assert.deepEqual(results.at(-1), { category: results.at(-1)!.category, winners: [3], score: 6 });
+  assert.equal(results.at(-1)!.category.id, 'champion');
 });
 
 test('picks five different voted categories', () => {

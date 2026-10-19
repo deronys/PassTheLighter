@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { Text } from 'react-native';
 
 import { Button } from '../components/Button';
-import { MomentCard } from '../components/MomentCard';
 import { Screen } from '../components/Screen';
+import { SecretsCarousel } from '../components/SecretsCarousel';
 import type { GameState } from '../game';
 import { common } from '../theme';
 
@@ -13,22 +14,23 @@ type Props = {
   onVote: () => void;
 };
 
+// The big reveal: flip each secret question over, react and roast, then vote.
 export function RecapScreen({ state, onComment, onReact, onVote }: Props) {
+  const [index, setIndex] = useState(0);
+  const last = index === state.passes.length - 1;
+
   return (
-    <Screen footer={<Button label="Vote for the awards 🏆" onPress={onVote} />}>
+    <Screen
+      footer={
+        last ? (
+          <Button label="Vote for the awards 🏆" onPress={onVote} />
+        ) : (
+          <Button label="Next secret ▶" onPress={() => setIndex(index + 1)} />
+        )
+      }
+    >
       <Text style={common.title}>The secrets</Text>
-      <Text style={[common.muted, common.center]}>
-        Every question, revealed. React, roast each other and comment on any pass before voting.
-      </Text>
-      {state.passes.map((_, index) => (
-        <MomentCard
-          key={index}
-          state={state}
-          index={index}
-          onComment={(author, text) => onComment(index, author, text)}
-          onReact={(emoji) => onReact(index, emoji)}
-        />
-      ))}
+      <SecretsCarousel state={state} index={index} onIndex={setIndex} onComment={onComment} onReact={onReact} />
     </Screen>
   );
 }

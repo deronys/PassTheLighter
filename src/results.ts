@@ -15,7 +15,7 @@ export type AwardResult = {
   category: AwardCategory;
   // More than one winner on a tie.
   winners: number[];
-  // Votes for each winner, or lighters received for the automatic award.
+  // Votes for each winner; for the champion, votes across all awards.
   score: number;
 };
 
@@ -37,18 +37,18 @@ export function pickVotedCategories(random: Random = Math.random): string[] {
   return shuffle(voted, random).slice(0, VOTED_CATEGORIES_PER_GAME);
 }
 
-// The automatic awards come first, then the voted ones in the order they were picked.
+// The voted awards in the order they were picked, then the Lighter Champion:
+// whoever got the most votes over all the awards, even without winning one.
 export function awardResults(state: GameState): AwardResult[] {
-  const auto = AWARD_CATEGORIES.filter((c) => c.kind === 'auto').map((category) =>
-    topScorers(category, state.receives),
-  );
   const voted = state.categories.map((id) => {
     const counts = state.players.map(
       (_, player) => state.votes.filter((v) => v.category === id && v.nominee === player).length,
     );
     return topScorers(findCategory(id), counts);
   });
-  return [...auto, ...voted];
+  const totals = state.players.map((_, player) => state.votes.filter((v) => v.nominee === player).length);
+  const auto = AWARD_CATEGORIES.filter((c) => c.kind === 'auto').map((category) => topScorers(category, totals));
+  return [...voted, ...auto];
 }
 
 function topScorers(category: AwardCategory, scores: number[]): AwardResult {

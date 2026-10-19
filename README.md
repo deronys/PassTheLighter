@@ -10,7 +10,7 @@ Everyone sits together and shares one phone, which is the lighter.
 2. The holder picks who gets the lighter and writes them a secret question about the others in the group, or picks one of 5 suggested questions.
 3. The new holder reads the question and answers it by picking who gets the lighter next, without saying why. Then they write that player a new question.
 4. When a player gets the lighter for the third time, they answer their question and the game ends.
-5. Every question and answer is revealed. Players react and comment on each pass, vote in 5 random award categories, and watch the awards ceremony.
+5. The secrets are revealed one at a time: flip each question card, react with emoji and roast each other with one-tap comments. Then everyone votes in 5 random award categories and watches the awards ceremony. The Lighter Champion is whoever got the most votes over all the awards.
 
 ## Where things live
 

@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
-import { MomentCard } from '../components/MomentCard';
 import { Screen } from '../components/Screen';
+import { SecretsCarousel } from '../components/SecretsCarousel';
 import { ACHIEVEMENTS } from '../data/achievements';
 import type { GameState } from '../game';
 import type { AwardResult, PlayerStats } from '../results';
@@ -25,6 +25,7 @@ type Props = {
 
 export function FinalScreen({ state, results, stats, unlocked, onComment, onReact, onPlayAgain, onHome }: Props) {
   const [tab, setTab] = useState<Tab>('awards');
+  const [moment, setMoment] = useState(0);
   const { players } = state;
 
   return (
@@ -64,16 +65,16 @@ export function FinalScreen({ state, results, stats, unlocked, onComment, onReac
           </View>
         ))}
 
-      {tab === 'moments' &&
-        state.passes.map((_, index) => (
-          <MomentCard
-            key={index}
-            state={state}
-            index={index}
-            onComment={(author, text) => onComment(index, author, text)}
-            onReact={(emoji) => onReact(index, emoji)}
-          />
-        ))}
+      {tab === 'moments' && (
+        <SecretsCarousel
+          state={state}
+          index={moment}
+          onIndex={setMoment}
+          allRevealed
+          onComment={onComment}
+          onReact={onReact}
+        />
+      )}
 
       {tab === 'stats' &&
         players.map((player, i) => {

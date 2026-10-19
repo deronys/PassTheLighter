@@ -2,6 +2,14 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.6.0 - 2026-10-19
+
+- The Lighter Champion is now whoever got the most votes over all the awards in total, even without winning a single category. Ties share it. It is revealed last in the ceremony, as the grand finale.
+- The secrets recap is now a game: one secret at a time, shown as who passed the lighter to whom and a face-down card you tap to flip over. The question card has its category colour, and the answer pops in underneath.
+- Reactions are big emoji buttons with counters, and each tap sends the emoji floating up.
+- Comments: tap your face, then tap a one-tap roast (😂 No way!, 🎯 Called it, 💀 Busted, 🙈 Awkward…, 🔥 Savage, 🤥 Liar!) or type your own. Comments show as speech bubbles in the player's colour.
+- The Moments tab of the final recap uses the same secret cards.
+
 ## v0.5.2 - 2026-10-19
 
 - The box where you write your question now looks like a question card too: same shape, gradient, card font and corner emoji. It is orange with a ✏️ while you write your own; when you copy an idea card it takes that card's colour and category until you change the text.

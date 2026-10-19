@@ -16,7 +16,7 @@ export const AWARD_CATEGORIES: AwardCategory[] = [
   { id: 'actor', emoji: '🎭', title: 'The Best Actor', description: 'Convinced everyone they were telling the truth.', kind: 'vote' },
   { id: 'strategist', emoji: '🎯', title: 'The Master Strategist', description: 'Always seemed to know exactly whom to give the lighter to.', kind: 'vote' },
   { id: 'detective', emoji: '🕵️', title: 'The Best Detective', description: 'Figured out what was really going on behind everyone else\'s answers.', kind: 'vote' },
-  { id: 'champion', emoji: '🔥', title: 'The Lighter Champion', description: 'Received the lighter the most times.', kind: 'auto' },
+  { id: 'champion', emoji: '🔥', title: 'The Lighter Champion', description: 'Got the most votes across all the awards.', kind: 'auto' },
   { id: 'one-liners', emoji: '😂', title: 'The King/Queen of One-Liners', description: 'Delivered the funniest comments and reactions.', kind: 'vote' },
   { id: 'unpredictable', emoji: '🌀', title: 'The Most Unpredictable Player', description: 'Nobody could ever guess their next move.', kind: 'vote' },
   { id: 'troublemaker', emoji: '🧨', title: 'The Biggest Troublemaker', description: 'Created the most unexpected situations.', kind: 'vote' },

@@ -101,7 +101,7 @@ export function CeremonyScreen({ state, results, onDone }: Props) {
             </View>
             <Text style={[common.body, common.center]}>
               {result.category.kind === 'auto'
-                ? `Got the lighter ${result.score} ${result.score === 1 ? 'time' : 'times'}`
+                ? `${result.score} ${result.score === 1 ? 'vote' : 'votes'} in total`
                 : `${result.score} ${result.score === 1 ? 'vote' : 'votes'}`}
             </Text>
           </View>
