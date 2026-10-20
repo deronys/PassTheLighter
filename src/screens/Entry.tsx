@@ -167,7 +167,7 @@ export function MainMenu() {
       </View>
       <Image source={art.logo} style={styles.logoMenu} resizeMode="contain" accessibilityLabel="Pass The Lighter" />
       <View style={styles.menuButtons}>
-        <ComicButton label="PLAY" sound="flick" onPress={() => nav.push({ name: 'games' })} />
+        <ComicButton label="PLAY" sound={null} onPress={() => nav.push({ name: 'games' })} />
         <ComicButton label="FRIENDS" color="yellow" onPress={() => nav.push({ name: 'friends' })} />
         <ComicButton label="HOW TO PLAY" color="yellow" onPress={() => nav.push({ name: 'tutorial', fromMenu: true })} />
       </View>

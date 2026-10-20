@@ -75,9 +75,9 @@ function HolderScreen({ game }: { game: Game }) {
   const final = isFinalPass(game, target.id);
 
   const footer = final ? (
-    <ComicButton label="FINAL PASS!" sound="flick" onPress={() => pass(game.id, target.id, '')} />
+    <ComicButton label="FINAL PASS!" sound={null} onPress={() => pass(game.id, target.id, '')} />
   ) : (
-    <ComicButton label="PASS AND ASK!" sound="flick" onPress={() => nav.push({ name: 'ask', id: game.id, to: target.id })} />
+    <ComicButton label="PASS AND ASK!" sound={null} onPress={() => nav.push({ name: 'ask', id: game.id, to: target.id })} />
   );
 
   return (
@@ -176,7 +176,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
             </SpeechBubble>
           </View>
         </View>
-        <ComicButton label="ASK A QUESTION" sound="pass" disabled={!question.trim()} onPress={send} />
+        <ComicButton label="ASK A QUESTION" sound={null} disabled={!question.trim()} onPress={send} />
         <Text style={styles.hint}>Only {firstName(target)} will see it.</Text>
         <Title size={22} style={styles.section}>
           NEED AN IDEA?

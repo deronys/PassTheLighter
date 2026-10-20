@@ -141,7 +141,7 @@ type ButtonProps = {
   disabled?: boolean;
   small?: boolean;
   style?: StyleProp<ViewStyle>;
-  sound?: 'tap' | 'pass' | 'flick' | 'pop' | null;
+  sound?: 'tap' | 'pop' | null;
 };
 
 // The chunky painted buttons from the designs. They squash when pressed.

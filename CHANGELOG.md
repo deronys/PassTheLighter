@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.10.3 - 2026-10-20
+
+- Removed the pass and flick sounds completely. Passing the lighter and the main buttons (Play, Create Game, Pass and Ask, Burn It, Vote Now and others) are silent until new sounds are chosen.
+
 ## v0.10.2 - 2026-10-20
 
 - New sounds for passing the lighter (three quick rising bell notes instead of a whoosh) and for the main buttons (a bright "ding-ding" instead of a lighter hiss). John didn't like the hiss and whoosh.

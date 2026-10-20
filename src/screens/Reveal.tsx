@@ -52,7 +52,7 @@ export function BurnQuestion({ id, index, revealed, missed }: BurnProps) {
   ) : (
     <View style={styles.row}>
       <ComicButton label="BACK" color="yellow" onPress={nav.back} style={styles.grow} />
-      <ComicButton label="BURN IT!" sound="flick" onPress={burnIt} style={styles.grow} />
+      <ComicButton label="BURN IT!" sound={null} onPress={burnIt} style={styles.grow} />
     </View>
   );
 

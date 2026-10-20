@@ -4,8 +4,6 @@ import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 
 const SOURCES = {
-  pass: require('../assets/sounds/pass.wav'),
-  flick: require('../assets/sounds/flick.wav'),
   pop: require('../assets/sounds/pop.wav'),
   tap: require('../assets/sounds/tap.wav'),
   boom: require('../assets/sounds/boom.wav'),

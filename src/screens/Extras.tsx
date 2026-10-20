@@ -106,7 +106,7 @@ export function Friends() {
       title="FRIENDS"
       onBack={nav.back}
      
-      footer={<ComicButton label="START A GAME" sound="flick" onPress={() => nav.push({ name: 'invite' })} />}
+      footer={<ComicButton label="START A GAME" sound={null} onPress={() => nav.push({ name: 'invite' })} />}
     >
       <Text style={styles.small}>{friends.length} friends play Pass The Lighter</Text>
       {friends.map((f) => (

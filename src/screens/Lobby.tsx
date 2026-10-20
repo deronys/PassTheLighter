@@ -39,7 +39,7 @@ export function GameList() {
   return (
     <Screen title="GAME LIST" onBack={nav.back}>
       <View style={styles.center}>
-        <ComicButton label="CREATE GAME" sound="flick" onPress={() => nav.push({ name: 'invite' })} style={styles.create} />
+        <ComicButton label="CREATE GAME" sound={null} onPress={() => nav.push({ name: 'invite' })} style={styles.create} />
       </View>
       {games.length === 0 && <Text style={styles.empty}>No games yet. Create one and invite your friends!</Text>}
       {games.map((game, i) => {
@@ -212,7 +212,7 @@ export function InviteFriends() {
             <TextInput value={name} onChangeText={setName} style={styles.input} maxLength={24} autoFocus />
             <ComicButton
               label="SEND INVITES"
-              sound="pass"
+              sound={null}
               disabled={!name.trim()}
               onPress={() => {
                 setNaming(false);
@@ -257,7 +257,7 @@ export function WaitingRoom({ game }: { game: Game }) {
       />
     </View>
   ) : isHost ? (
-    <ComicButton label="START GAME" sound="flick" disabled={!canStart(game)} onPress={() => start(game.id)} />
+    <ComicButton label="START GAME" sound={null} disabled={!canStart(game)} onPress={() => start(game.id)} />
   ) : undefined;
 
   return (

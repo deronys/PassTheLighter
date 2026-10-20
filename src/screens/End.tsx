@@ -43,7 +43,7 @@ export function GameOver({ game }: { game: Game }) {
     voted || everyoneVoted(game) ? (
       <ComicButton label="RESULTS" color="yellow" onPress={() => nav.push({ name: 'results', id: game.id })} />
     ) : (
-      <ComicButton label="VOTE NOW!" sound="flick" onPress={() => nav.push({ name: 'vote', id: game.id })} />
+      <ComicButton label="VOTE NOW!" sound={null} onPress={() => nav.push({ name: 'vote', id: game.id })} />
     )
   ) : undefined;
 
@@ -238,7 +238,7 @@ export function Vote({ id }: { id: string }) {
       footer={
         <ComicButton
           label={done ? 'SEND MY VOTES' : `${Object.keys(picks).length} OF ${g.categories.length} PICKED`}
-          sound="flick"
+          sound={null}
           disabled={!done}
           onPress={() => {
             vote(id, picks);

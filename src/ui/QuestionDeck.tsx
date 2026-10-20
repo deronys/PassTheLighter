@@ -147,7 +147,7 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
 
       <View style={[styles.controls, styles.stretch]}>
         <ComicButton label="USE IT" small color="yellow" sound="pop" onPress={() => onUse(cards[top])} style={styles.grow} />
-        <ComicButton label="NEW CARDS" small sound="flick" onPress={onDeal} style={styles.grow} />
+        <ComicButton label="NEW CARDS" small sound={null} onPress={onDeal} style={styles.grow} />
       </View>
     </View>
   );
