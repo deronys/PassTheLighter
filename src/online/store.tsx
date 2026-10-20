@@ -8,8 +8,10 @@ import { setMuted } from '../feedback';
 import { type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
 import { type Game, type User, addComment, toggleReaction, burn, castVotes, createGame, passAndAsk, removeFor, respond, sendChat, startGame } from './rules';
 
-// v2 started everyone's demo over (John asked for fresh test games in v0.10.0).
-const KEY = 'ptl.demo.v2';
+// A new key starts everyone's demo over: v2 in v0.10.0, v3 in v0.12.0 (John
+// asked for fresh test data both times). Older saves are deleted.
+const KEY = 'ptl.demo.v3';
+const OLD_KEYS = ['ptl.demo.v1', 'ptl.demo.v2'];
 
 type Store = {
   ready: boolean;
@@ -63,6 +65,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   latest.current = state;
 
   useEffect(() => {
+    AsyncStorage.multiRemove(OLD_KEYS).catch(() => undefined);
     AsyncStorage.getItem(KEY)
       .then((raw) => {
         if (raw) setState(upgrade(JSON.parse(raw)));

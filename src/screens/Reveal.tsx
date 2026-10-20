@@ -1,7 +1,7 @@
 // 11 Burn the question, 12 Game progress and 13 the advertisement.
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Polygon } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { buzz, play } from '../feedback';
 import { useNav } from '../nav';
@@ -9,8 +9,9 @@ import { firstName } from '../online/demo';
 import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
 import { useGameBar } from './gameBar';
+import { Round, roundIndexes, runningCounts } from './Round';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
-import { Avatar, BubbleText, ComicButton, HiddenTicket, LighterIcon, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
+import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -149,7 +150,7 @@ function RevealPopup({ visible, onClose, asker, target, question }: { visible: b
   );
 }
 
-// 12: every pass so far, newest first. Hidden questions can be burned.
+// 12: every round so far, newest first. Hidden questions can be burned.
 export function GameProgress({ id }: { id: string }) {
   const nav = useNav();
   const { game, me, user } = useStore();
@@ -164,7 +165,8 @@ export function GameProgress({ id }: { id: string }) {
   }
   const counts = runningCounts(g);
   const holder = g.holder ? user(g.holder) : undefined;
-  const rows = g.passes.map((p, i) => ({ p, i })).reverse();
+  // Newest round first.
+  const rounds = roundIndexes(g).map((i, k) => ({ i, n: k + 1 })).reverse();
 
   return (
     <Screen title="GAME PROGRESS" onBack={nav.back} {...bar} onLighters={undefined}>
@@ -197,45 +199,16 @@ export function GameProgress({ id }: { id: string }) {
           </Title>
         </PassBanner>
       )}
-      {rows.length === 0 && <Text style={styles.hint}>No passes yet.</Text>}
-      {rows.map(({ p, i }) => {
-        const seen = canSee(g, i, me.id);
-        return (
-          <View key={i} style={styles.progressRow}>
-            <View style={styles.step}>
-              <Text style={styles.stepNumber}>{i + 1}</Text>
-            </View>
-            <View style={styles.progressQuestion}>
-              {seen ? (
-                <View style={[styles.miniBubble, !p.question && styles.miniFinal]}>
-                  <Text style={[styles.miniText, !p.question && styles.miniFinalText]} numberOfLines={4}>
-                    {p.question || '🔥 3rd lighter. Game over!'}
-                  </Text>
-                </View>
-              ) : (
-                <HiddenTicket small onPress={() => nav.push({ name: 'burn', id, index: i })} />
-              )}
-            </View>
-            <Avatar user={user(p.from)} size={56} label={p.from === me.id ? 'You' : firstName(user(p.from))} />
-            <View style={styles.moveArrow} accessibilityLabel="passed the lighter to">
-              <LighterIcon size={26} />
-              <Svg width={22} height={26} viewBox="0 0 26 30">
-                <Polygon points="2,2 24,15 2,28" fill="none" stroke={colors.yellow} strokeWidth={3.5} strokeLinejoin="round" />
-              </Svg>
-            </View>
-            <Avatar user={user(p.to)} size={56} count={counts[i]} label={p.to === me.id ? 'You' : firstName(user(p.to))} />
-          </View>
-        );
-      })}
+      {rounds.length === 0 && <Text style={styles.hint}>No questions yet.</Text>}
+      {rounds.map(({ i, n }) => (
+        <Panel key={i}>
+          <Round game={g} index={i} n={n} counts={counts} />
+        </Panel>
+      ))}
     </Screen>
   );
 }
 
-// How many times the receiver had got the lighter by each pass. The host's start counts as one.
-function runningCounts(game: Game): number[] {
-  const seen: Record<string, number> = { [game.hostId]: 1 };
-  return game.passes.map((p) => (seen[p.to] = (seen[p.to] ?? 0) + 1));
-}
 
 // 13: a pretend full-screen ad. Watching to the end burns the question.
 export function Advertisement({ id, index }: { id: string; index: number }) {
@@ -362,62 +335,12 @@ const styles = StyleSheet.create({
     fontSize: 19,
     color: colors.cyan,
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   passIt: {
     fontFamily: fonts.comic,
     fontSize: 20,
     color: colors.yellow,
     marginTop: 4,
     ...comicShadow,
-  },
-  // The step's place in the game, oldest first.
-  step: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.red,
-    borderWidth: 3,
-    borderColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumber: {
-    fontFamily: fonts.comic,
-    fontSize: 17,
-    color: colors.white,
-    marginTop: 2,
-  },
-  moveArrow: {
-    alignItems: 'center',
-  },
-  progressQuestion: {
-    flex: 1,
-  },
-  miniBubble: {
-    backgroundColor: colors.white,
-    borderRadius: 18,
-    padding: 10,
-    minHeight: 70,
-    justifyContent: 'center',
-  },
-  miniFinal: {
-    backgroundColor: colors.red,
-    borderWidth: 2,
-    borderColor: colors.yellow,
-  },
-  miniFinalText: {
-    fontFamily: fonts.comic,
-    color: colors.white,
-  },
-  miniText: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 18,
-    color: colors.bubbleText,
   },
   ad: {
     flex: 1,

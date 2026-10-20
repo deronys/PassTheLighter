@@ -12,7 +12,7 @@ import { StoreProvider, useStore } from './src/online/store';
 import { Chat } from './src/screens/Chat';
 import { Comments, Results, Vote } from './src/screens/End';
 import { Login, MainMenu, Splash, Tutorial } from './src/screens/Entry';
-import { Friends, Settings } from './src/screens/Extras';
+import { Friends, Profile, Settings } from './src/screens/Extras';
 import { GameList, InviteFriends } from './src/screens/Lobby';
 import { PhotoCrop } from './src/screens/PhotoCrop';
 import { AskQuestion, GameScreen } from './src/screens/Play';
@@ -83,6 +83,8 @@ function render(route: Route) {
       return <Results id={route.id} />;
     case 'photo':
       return <PhotoCrop source={route.source} />;
+    case 'profile':
+      return <Profile id={route.id} />;
   }
 }
 

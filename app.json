@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pass The Lighter",
     "slug": "pass-the-lighter",
-    "version": "0.11.1",
+    "version": "0.12.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { newDemo, newlyPassedToYou, signIn, tick } from './demo.ts';
+import { newDemo, newlyPassedToYou, playerStats, signIn, tick } from './demo.ts';
 import {
   INVITE_WINDOW_MS,
   addComment,
@@ -25,7 +25,10 @@ import {
   respond,
   roleOf,
   startGame,
-  visibleTo, MAX_COMMENT } from './rules.ts';
+  visibleTo,
+  MAX_COMMENT,
+  MORE_REACTIONS,
+} from './rules.ts';
 
 function started() {
   let g = createGame('g', 'Test', 'a', ['b', 'c', 'd', 'e'], 0);
@@ -182,4 +185,26 @@ test('only players can comment or react, and long texts are refused', () => {
   assert.throws(() => toggleReaction(g, 'stranger', 0, '😂'));
   assert.throws(() => addComment(g, 'a', 0, 'x'.repeat(MAX_COMMENT + 1), 0));
   assert.equal(addComment(g, 'a', 0, 'x'.repeat(MAX_COMMENT), 0).comments.length, g.comments.length + 1);
+});
+
+test('rounds take extra emoji, but the final pass has no round to react to', () => {
+  const g = finished();
+  assert.equal(g.passes[3].question, '');
+  assert.equal(toggleReaction(g, 'a', 0, MORE_REACTIONS[0]).reactions.length, 1);
+  assert.throws(() => toggleReaction(g, 'a', 0, '🍕'));
+  assert.throws(() => toggleReaction(g, 'a', 3, '😂'));
+  assert.throws(() => addComment(g, 'a', 3, 'Hi', 0));
+});
+
+test('profiles count finished games, champions and awards', () => {
+  const now = 1_000_000_000;
+  const state = signIn(newDemo(), 'John', now);
+  const weekend = state.games.find((g) => g.status === 'finished')!;
+  const mine = playerStats(state, 'me');
+  assert.equal(mine.games, 1);
+  // Demo friends have games from before, plus this demo's finished game.
+  const friend = players(weekend).find((p) => p !== 'me')!;
+  const before = playerStats({ ...state, games: [] }, friend);
+  assert.equal(playerStats(state, friend).games, before.games + 1);
+  assert.ok(before.games >= 4);
 });

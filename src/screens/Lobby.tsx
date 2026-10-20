@@ -4,7 +4,7 @@ import { Modal, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text
 import Svg, { Path } from 'react-native-svg';
 
 import { useNav } from '../nav';
-import { firstName } from '../online/demo';
+import { firstName, playerStats } from '../online/demo';
 import { type Game, MAX_PLAYERS, MIN_PLAYERS, canStart, players, receives, roleOf, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
 import { useGameBar } from './gameBar';
@@ -165,7 +165,7 @@ export function InviteFriends() {
         <ScrollView ref={scroll} style={styles.grow} contentContainerStyle={styles.friendList}>
           {visible.map((f) => {
             const on = picked.includes(f.id);
-            const stars = Math.round(1 + (f.id.charCodeAt(f.id.length - 1) % 5));
+            const played = playerStats(state, f.id).games;
             return (
               <Pressable
                 key={f.id}
@@ -181,9 +181,8 @@ export function InviteFriends() {
                     <Text style={styles.friendName} numberOfLines={1}>
                       {f.name}
                     </Text>
-                    <Text style={styles.stars}>
-                      {'★'.repeat(stars)}
-                      <Text style={styles.starsOff}>{'★'.repeat(5 - stars)}</Text>
+                    <Text style={styles.played}>
+                      {played} {played === 1 ? 'game' : 'games'} played
                     </Text>
                   </View>
                   {on && (
@@ -415,13 +414,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.title,
   },
-  stars: {
-    fontSize: 24,
+  played: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
     color: colors.yellow,
-    letterSpacing: 2,
-  },
-  starsOff: {
-    color: 'rgba(255,255,255,0.3)',
   },
   index: {
     justifyContent: 'space-between',

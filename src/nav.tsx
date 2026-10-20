@@ -19,7 +19,8 @@ export type Route =
   | { name: 'comments'; id: string; index: number }
   | { name: 'vote'; id: string }
   | { name: 'results'; id: string }
-  | { name: 'photo'; source: string };
+  | { name: 'photo'; source: string }
+  | { name: 'profile'; id: string };
 
 type Nav = {
   route: Route;

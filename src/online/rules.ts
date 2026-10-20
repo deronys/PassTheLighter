@@ -69,7 +69,14 @@ export type Reaction = {
   emoji: string;
 };
 
+// The quick reactions under each round, and the extra ones behind the + button.
 export const REACTIONS = ['😂', '😱', '🔥', '🙈', '💀', '❤️'];
+export const MORE_REACTIONS = [
+  '🤣', '😅', '😏', '😳', '🥵', '🥶', '🤯', '😬', '🤔', '🧐', '😇', '😈',
+  '🤡', '👀', '🤭', '🫢', '😮', '😍', '🥰', '😘', '😢', '😭', '😤', '😡',
+  '🤬', '🤮', '🤐', '🫣', '🙄', '😴', '👏', '🙌', '👍', '👎', '💯', '🎯',
+  '🍆', '🍑', '🌶️', '💋', '💔', '🫶', '🎉', '🍻', '🤷', '🐍', '🐔', '🚩',
+];
 
 export type GameStatus = 'waiting' | 'active' | 'finished';
 
@@ -266,7 +273,7 @@ export function sendChat(game: Game, from: string, text: string, now: number): G
 export function addComment(game: Game, from: string, passIndex: number, text: string, now: number): Game {
   const t = text.trim();
   if (game.status !== 'finished') throw new Error('Comments open when the game is over');
-  if (!game.passes[passIndex]) throw new Error('No such question');
+  if (!game.passes[passIndex]?.question) throw new Error('No such question');
   if (!isPlayer(game, from)) throw new Error('Only players can comment');
   if (t.length > MAX_COMMENT) throw new Error('That comment is too long');
   if (!t) return game;
@@ -276,7 +283,8 @@ export function addComment(game: Game, from: string, passIndex: number, text: st
 // Tapping an emoji adds your reaction to a move; tapping it again takes it back.
 export function toggleReaction(game: Game, from: string, passIndex: number, emoji: string): Game {
   if (game.status !== 'finished') throw new Error('Reactions open when the game is over');
-  if (!game.passes[passIndex] || !REACTIONS.includes(emoji)) throw new Error('No such reaction');
+  if (!game.passes[passIndex]?.question) throw new Error('No such question');
+  if (!REACTIONS.includes(emoji) && !MORE_REACTIONS.includes(emoji)) throw new Error('No such reaction');
   if (!isPlayer(game, from)) throw new Error('Only players can react');
   const mine = (r: Reaction) => r.from === from && r.passIndex === passIndex && r.emoji === emoji;
   return game.reactions.some(mine)

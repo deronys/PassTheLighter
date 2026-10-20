@@ -2,6 +2,7 @@
 // answer invitations and pass the lighter on their own after a few seconds.
 // Everything is plain data plus a `tick` that moves the bots, so it can be
 // tested and saved on the phone. A real server replaces this later.
+import { VOTE_CATEGORY_IDS } from '../data/awards.ts';
 import { QUESTIONS } from '../data/questions.ts';
 import {
   type Game,
@@ -10,13 +11,16 @@ import {
   canStart,
   castVotes,
   createGame,
+  everyoneVoted,
   passAndAsk,
   players,
   respond,
+  results,
   sendChat,
   startGame,
   toggleReaction,
   REACTIONS,
+  MORE_REACTIONS,
 } from './rules.ts';
 
 export type Settings = { sound: boolean; notifications: boolean };
@@ -194,18 +198,22 @@ function botChat(state: DemoState, g: Game, now: number): Game {
 function botWrapUp(g: Game, state: DemoState, now: number): Game {
   const ended = g.endedAt!;
   const bots = players(g).filter((p) => isBot(state, p));
-  g.passes.forEach((_, i) => {
+  // Only passes that carried a question have a round to comment on or react to.
+  const rounds = g.passes.flatMap((p, i) => (p.question ? [i] : []));
+  rounds.forEach((i) => {
     const key = `${g.id}:comment:${i}`;
     if (chance(key) > 0.5 || now < ended + 3000 + i * 1500) return;
     const bot = bots[Math.floor(chance(`${key}:who`) * bots.length)];
     if (!bot || g.comments.some((c) => c.passIndex === i && c.from === bot)) return;
     g = addComment(g, bot, i, ROASTS[Math.floor(chance(`${key}:text`) * ROASTS.length)], now);
   });
-  g.passes.forEach((_, i) => {
+  rounds.forEach((i) => {
     for (const bot of bots) {
       const key = `${g.id}:react:${i}:${bot}`;
       if (chance(key) > 0.35 || now < ended + 2500 + chance(`${key}:at`) * 6000) continue;
-      const emoji = REACTIONS[Math.floor(chance(`${key}:emoji`) * REACTIONS.length)];
+      // Mostly the quick reactions, sometimes one of the extra emoji.
+      const pool = chance(`${key}:more`) < 0.25 ? MORE_REACTIONS : REACTIONS;
+      const emoji = pool[Math.floor(chance(`${key}:emoji`) * pool.length)];
       if (!g.reactions.some((r) => r.from === bot && r.passIndex === i)) g = toggleReaction(g, bot, i, emoji);
     }
   });
@@ -226,4 +234,29 @@ export function newlyPassedToYou(before: DemoState, after: DemoState): Game[] {
     const old = before.games.find((o) => o.id === g.id);
     return g.holder === me && old && old.holder !== me && g.passes.length > old.passes.length;
   });
+}
+
+export type PlayerStats = { games: number; champion: number; awards: Record<string, number> };
+
+// A player's record: finished games, Lighter Champion titles and award wins.
+// Demo friends come with games played before you joined; the finished games
+// in this demo add to that.
+export function playerStats(state: DemoState, id: string): PlayerStats {
+  const stats: PlayerStats = { games: 0, champion: 0, awards: {} };
+  if (isBot(state, id)) {
+    stats.games = 4 + Math.floor(chance(`${id}:games`) * 22);
+    stats.champion = Math.floor(chance(`${id}:champion`) * (stats.games / 3));
+    for (const c of VOTE_CATEGORY_IDS) {
+      if (chance(`${id}:${c}`) < 0.45) stats.awards[c] = 1 + Math.floor(chance(`${id}:${c}:wins`) * (stats.games / 4));
+    }
+  }
+  for (const g of state.games) {
+    if (g.status !== 'finished' || !players(g).includes(id)) continue;
+    stats.games++;
+    if (!everyoneVoted(g)) continue;
+    const r = results(g);
+    if (r.champions.includes(id)) stats.champion++;
+    for (const c of g.categories) if (r.winners[c].includes(id)) stats.awards[c] = (stats.awards[c] ?? 0) + 1;
+  }
+  return stats;
 }

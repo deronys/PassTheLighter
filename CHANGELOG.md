@@ -2,6 +2,18 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.12.0 - 2026-10-20
+
+Changes from John's "Improvements New Version V4". The demo starts over with fresh test games (older saves are deleted).
+
+- Game Progress and the reveal show each round in three steps, top to bottom: who asked whom, the question, then who that person gave the lighter to. For example "Kristen asked Claire", the question, "Claire gave the lighter to Eleni".
+- Bug fix: the host's question in the first round now shows. Round 1 reads "Dimitris started the game and asked Scarlet" with the question under it.
+- Under each round in the reveal: the emoji reactions and the comment button. The preview of the latest comment is gone.
+- More emoji: the + button after the quick reactions opens 48 more. Emoji someone picked show on that round with their count.
+- Voting Results: each award's vote count says "Click to see" and opens who voted for whom in that award. The separate "See who voted for who" section is gone.
+- Player profiles: tap a friend in Friends, or "MY PROFILE" in Settings, to see games played, how many times they were Lighter Champion and every award they won.
+- No more stars in the invite list: each friend shows how many games they have played. The Friends screen shows it too.
+
 ## v0.11.1 - 2026-10-20
 
 - The lighter in a star burst (on "You got it!", the pass banners and next to the player who has the lighter) was cut off on the left. It is cut again from the final design, whole and with a clean edge.

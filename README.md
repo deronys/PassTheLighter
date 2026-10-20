@@ -23,7 +23,7 @@ The screens follow John's final designs and `Screens_Flow_revised.md`.
 - `src/online/demo.ts`: the demo server: friends, sample games and the computer players' moves. `src/online/store.tsx` keeps that state on the phone and gives the screens their actions. A real backend (Firebase, Facebook and Google sign-in, AdMob) will sit behind the same actions.
 - `src/nav.tsx`: the screen stack. `src/screens/`: Entry (welcome, how to play, login, menu), Lobby (game list, invite, waiting room), Play (pass, ask, game status), Reveal (burn, game progress, ad) and Extras (settings, friends).
 - `src/ui/kit.tsx`: the painted header, comic buttons, speech bubbles, hidden ticket and the rest. `src/ui/QuestionDeck.tsx`: the suggested question cards. `assets/art/`: art cut from the designs.
-- `src/screens/End.tsx`: game over, comments, voting and results. `src/screens/Chat.tsx`: the game chat. `src/photo.ts`: picking and cropping a profile picture. `src/screens/PhotoCrop.tsx`: the screen where you move and zoom your photo in the profile frame.
+- `src/screens/End.tsx`: game over, comments, voting and results. `src/screens/Chat.tsx`: the game chat. `src/screens/Round.tsx`: one round (who asked whom, the question, who got the lighter next) for Game Progress and the reveal. `Profile` in `src/screens/Extras.tsx`: a player's games and awards. `src/photo.ts`: picking and cropping a profile picture. `src/screens/PhotoCrop.tsx`: the screen where you move and zoom your photo in the profile frame.
 - `src/data/questions.ts`: the 200 suggested questions. `src/data/awards.ts`: the award categories (add one and it can come up in games).
 
 ## Run it

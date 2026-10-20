@@ -1,17 +1,17 @@
 // The end of a game: every secret revealed, comments, award votes and the champion.
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Svg, { Polygon } from 'react-native-svg';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, MAX_COMMENT, REACTIONS, everyoneVoted, lastHolder, players, results } from '../online/rules';
+import { type Game, MAX_COMMENT, MORE_REACTIONS, REACTIONS, everyoneVoted, lastHolder, players, results } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, BubbleText, ComicButton, Panel, PassBanner, LighterIcon, Screen, SpeechBubble, Title, art } from '../ui/kit';
+import { Avatar, ComicButton, Panel, PassBanner, Screen, Title, art } from '../ui/kit';
 import { useGameBar } from './gameBar';
+import { Round, roundIndexes } from './Round';
 
 const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
 
@@ -121,49 +121,20 @@ export function GameOver({ game }: { game: Game }) {
           Tap an emoji to react, or <Text style={styles.tipStrong}>💬 COMMENT</Text> to say what you think about each move!
         </Text>
       </Panel>
-      {game.passes.map((p, i) => {
-        const comments = game.comments.filter((c) => c.passIndex === i);
-        const latest = comments[comments.length - 1];
+      {roundIndexes(game).map((i, k) => {
+        const comments = game.comments.filter((c) => c.passIndex === i).length;
         return (
           <Panel key={i} style={styles.secret}>
-            <Move game={game} index={i} />
-            <View style={styles.reactions}>
-              {REACTIONS.map((emoji) => {
-                const who = game.reactions.filter((r) => r.passIndex === i && r.emoji === emoji);
-                const mine = who.some((r) => r.from === me.id);
-                return (
-                  <Pressable
-                    key={emoji}
-                    accessibilityRole="button"
-                    accessibilityLabel={`React ${emoji} to move ${i + 1}`}
-                    accessibilityState={{ selected: mine }}
-                    disabled={!isPlayer}
-                    onPress={() => {
-                      play('pop');
-                      react(game.id, i, emoji);
-                    }}
-                    style={[styles.reaction, mine && styles.reactionMine]}
-                  >
-                    <Text style={styles.reactionEmoji}>{emoji}</Text>
-                    {who.length > 0 && <Text style={styles.reactionCount}>{who.length}</Text>}
-                  </Pressable>
-                );
-              })}
-            </View>
-            {latest && (
-              <Text style={styles.latest} numberOfLines={1}>
-                <Text style={styles.latestName}>{name(latest.from)}: </Text>
-                {latest.text}
-              </Text>
-            )}
+            <Round game={game} index={i} n={k + 1} />
+            <Reactions game={game} index={i} n={k + 1} disabled={!isPlayer} />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Comments on move ${i + 1}`}
+              accessibilityLabel={`Comments on round ${k + 1}`}
               onPress={() => nav.push({ name: 'comments', id: game.id, index: i })}
               style={styles.commentButton}
             >
               <Text style={styles.commentButtonLabel}>
-                💬 {comments.length ? `${comments.length} ${comments.length === 1 ? 'COMMENT' : 'COMMENTS'}` : 'COMMENT'}
+                💬 {comments ? `${comments} ${comments === 1 ? 'COMMENT' : 'COMMENTS'}` : 'COMMENT'}
               </Text>
             </Pressable>
           </Panel>
@@ -173,70 +144,75 @@ export function GameOver({ game }: { game: Game }) {
   );
 }
 
-// One move of the reveal: who gave the lighter to whom, and the question they
-// were answering by doing it (the one they had been asked).
-function Move({ game, index, size = 48 }: { game: Game; index: number; size?: number }) {
-  const { user, me } = useStore();
-  const name = useName();
-  const p = game.passes[index];
-  const reason = game.passes[index - 1];
-  const final = index === game.passes.length - 1 && lastHolder(game) === p.to;
+// The quick emoji, any extra ones players picked, and a + button for more.
+function Reactions({ game, index, n, disabled }: { game: Game; index: number; n: number; disabled: boolean }) {
+  const { me, react } = useStore();
+  const [picking, setPicking] = useState(false);
+  const used = game.reactions.filter((r) => r.passIndex === index);
+  const extra = [...new Set(used.map((r) => r.emoji))].filter((e) => !REACTIONS.includes(e));
+  const toggle = (emoji: string) => {
+    play('pop');
+    react(game.id, index, emoji);
+  };
   return (
-    <View style={styles.move}>
-      <View style={styles.secretHead}>
-        <Step n={index + 1} />
-        <Avatar user={user(p.from)} size={size} label={name(p.from)} />
-        <View style={styles.moveArrow}>
-          <View accessibilityLabel="passed the lighter to">
-            <LighterIcon size={30} />
-          </View>
-          <Arrow />
-        </View>
-        <Avatar user={user(p.to)} size={size} label={name(p.to)} />
-      </View>
-      {reason ? (
-        <>
-          <Text style={styles.asked}>
-            BECAUSE {name(reason.from).toUpperCase()} ASKED {reason.to === me.id ? 'YOU' : name(reason.to).toUpperCase()}:
-          </Text>
-          <SpeechBubble tail="top">
-            <BubbleText>{reason.question}</BubbleText>
-          </SpeechBubble>
-        </>
-      ) : (
-        <Text style={styles.asked}>THE HOST STARTED THE GAME</Text>
+    <View style={styles.reactions}>
+      {[...REACTIONS, ...extra].map((emoji) => {
+        const who = used.filter((r) => r.emoji === emoji);
+        const mine = who.some((r) => r.from === me.id);
+        return (
+          <Pressable
+            key={emoji}
+            accessibilityRole="button"
+            accessibilityLabel={`React ${emoji} to round ${n}`}
+            accessibilityState={{ selected: mine }}
+            disabled={disabled}
+            onPress={() => toggle(emoji)}
+            style={[styles.reaction, mine && styles.reactionMine]}
+          >
+            <Text style={styles.reactionEmoji}>{emoji}</Text>
+            {who.length > 0 && <Text style={styles.reactionCount}>{who.length}</Text>}
+          </Pressable>
+        );
+      })}
+      {!disabled && (
+        <Pressable accessibilityRole="button" accessibilityLabel={`More emoji for round ${n}`} onPress={() => setPicking(true)} style={[styles.reaction, styles.reactionMore]}>
+          <Text style={styles.reactionMoreLabel}>＋</Text>
+        </Pressable>
       )}
-      {final && <FinalPass name={name(p.to)} />}
+      <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)}>
+        <Pressable style={styles.pickerBack} onPress={() => setPicking(false)} accessibilityLabel="Close">
+          <Panel style={styles.picker}>
+            <Title size={22} style={styles.center}>
+              PICK AN EMOJI
+            </Title>
+            <View style={styles.pickerGrid}>
+              {MORE_REACTIONS.map((emoji) => {
+                const mine = used.some((r) => r.emoji === emoji && r.from === me.id);
+                return (
+                  <Pressable
+                    key={emoji}
+                    accessibilityRole="button"
+                    accessibilityLabel={`React ${emoji} to round ${n}`}
+                    accessibilityState={{ selected: mine }}
+                    onPress={() => {
+                      toggle(emoji);
+                      setPicking(false);
+                    }}
+                    style={[styles.pickerItem, mine && styles.reactionMine]}
+                  >
+                    <Text style={styles.reactionEmoji}>{emoji}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Panel>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
-// The last pass: no question, it just ends the game.
-export function FinalPass({ name }: { name: string }) {
-  return (
-    <View style={styles.final}>
-      <Text style={styles.finalText}>🔥 {name === 'You' ? 'Your' : `${name}'s`} 3rd lighter. Game over!</Text>
-    </View>
-  );
-}
-
-function Step({ n }: { n: number }) {
-  return (
-    <View style={styles.step}>
-      <Text style={styles.stepNumber}>{n}</Text>
-    </View>
-  );
-}
-
-function Arrow() {
-  return (
-    <Svg width={22} height={26} viewBox="0 0 26 30">
-      <Polygon points="2,2 24,15 2,28" fill="none" stroke={colors.yellow} strokeWidth={3.5} strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-// Comments on one revealed move.
+// Comments on one revealed round.
 export function Comments({ id, index }: { id: string; index: number }) {
   const nav = useNav();
   const { game, me, user, comment } = useStore();
@@ -245,7 +221,7 @@ export function Comments({ id, index }: { id: string; index: number }) {
   const [text, setText] = useState('');
   const g = game(id);
   const p = g?.passes[index];
-  if (!g || !p) return <Missing title="COMMENTS" />;
+  if (!g || !p?.question) return <Missing title="COMMENTS" />;
   const list = g.comments.filter((c) => c.passIndex === index);
   const send = (t: string) => {
     if (!t.trim()) return;
@@ -285,7 +261,7 @@ export function Comments({ id, index }: { id: string; index: number }) {
       }
     >
       <Panel style={styles.secret}>
-        <Move game={g} index={index} size={56} />
+        <Round game={g} index={index} n={roundIndexes(g).indexOf(index) + 1} size={56} />
       </Panel>
       {list.length === 0 && <Text style={styles.hint}>No comments yet. Be the first!</Text>}
       {list.map((c, i) => (
@@ -380,7 +356,8 @@ export function Results({ id }: { id: string }) {
   const { game, me, user } = useStore();
   const bar = useGameBar(game(id));
   const name = useName();
-  const [showVotes, setShowVotes] = useState(false);
+  // Categories whose ballots are open: tap the vote count to see who voted for whom.
+  const [open, setOpen] = useState<string[]>([]);
   const g = game(id);
   if (!g) return <Missing title="VOTING RESULTS" />;
   const all = players(g);
@@ -423,23 +400,49 @@ export function Results({ id }: { id: string }) {
       {g.categories.map((c) => {
         const cat = findCategory(c);
         const winners = r.winners[c];
+        const votes = r.byCategory[c][winners[0]] ?? 0;
+        const shown = open.includes(c);
         return (
-          <Panel key={c} style={styles.award}>
-            <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
-            <View style={styles.grow}>
-              <Text style={styles.awardTitle}>{cat.title}</Text>
-              <Text style={styles.awardWinner}>
-                {winners.map(name).join(' & ')}{' '}
-                <Text style={styles.small}>
-                  ({r.byCategory[c][winners[0]] ?? 0} {r.byCategory[c][winners[0]] === 1 ? 'vote' : 'votes'})
-                </Text>
-              </Text>
+          <Panel key={c} style={styles.awardPanel}>
+            <View style={styles.award}>
+              <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
+              <View style={styles.grow}>
+                <Text style={styles.awardTitle}>{cat.title}</Text>
+                <Text style={styles.awardWinner}>{winners.map(name).join(' & ')}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: shown }}
+                  accessibilityLabel={`${cat.title}: ${votes} ${votes === 1 ? 'vote' : 'votes'}. Click to see who voted`}
+                  onPress={() => setOpen((o) => (shown ? o.filter((x) => x !== c) : [...o, c]))}
+                  hitSlop={8}
+                  style={styles.voteCount}
+                >
+                  <Text style={styles.voteCountLabel}>
+                    {votes} {votes === 1 ? 'vote' : 'votes'}
+                  </Text>
+                  <Text style={styles.voteCountHint}>{shown ? 'Click to hide ▲' : 'Click to see ▼'}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.winnerAvatars}>
+                {winners.slice(0, 2).map((p) => (
+                  <Avatar key={p} user={user(p)} size={46} />
+                ))}
+              </View>
             </View>
-            <View style={styles.winnerAvatars}>
-              {winners.slice(0, 2).map((p) => (
-                <Avatar key={p} user={user(p)} size={46} />
-              ))}
-            </View>
+            {shown &&
+              all.map((voter) => {
+                const pick = g.votes[voter]?.[c];
+                if (!pick) return null;
+                return (
+                  <View key={voter} style={styles.ballot}>
+                    <Avatar user={user(voter)} size={32} />
+                    <Text style={styles.ballotName}>{name(voter)}</Text>
+                    <Text style={styles.ballotArrow}>→</Text>
+                    <Avatar user={user(pick)} size={32} />
+                    <Text style={styles.ballotName}>{name(pick)}</Text>
+                  </View>
+                );
+              })}
           </Panel>
         );
       })}
@@ -454,31 +457,6 @@ export function Results({ id }: { id: string }) {
           <Text style={styles.rankVotes}>{r.totals[p] ?? 0}</Text>
         </View>
       ))}
-      <ComicButton label={showVotes ? 'HIDE WHO VOTED' : 'SEE WHO VOTED FOR WHO'} color="yellow" onPress={() => setShowVotes((v) => !v)} />
-      {showVotes &&
-        g.categories.map((c) => {
-          const cat = findCategory(c);
-          return (
-            <Panel key={c} style={styles.ballots}>
-              <Text style={styles.awardTitle}>
-                {cat.emoji} {cat.title}
-              </Text>
-              {all.map((voter) => {
-                const pick = g.votes[voter]?.[c];
-                if (!pick) return null;
-                return (
-                  <View key={voter} style={styles.ballot}>
-                    <Avatar user={user(voter)} size={32} />
-                    <Text style={styles.ballotName}>{name(voter)}</Text>
-                    <Text style={styles.ballotArrow}>→</Text>
-                    <Avatar user={user(pick)} size={32} />
-                    <Text style={styles.ballotName}>{name(pick)}</Text>
-                  </View>
-                );
-              })}
-            </Panel>
-          );
-        })}
     </Screen>
   );
 }
@@ -515,12 +493,6 @@ const styles = StyleSheet.create({
   },
   secret: {
     gap: 10,
-  },
-  move: {
-    gap: 8,
-  },
-  moveArrow: {
-    alignItems: 'center',
   },
   introArt: {
     width: '100%',
@@ -587,6 +559,43 @@ const styles = StyleSheet.create({
   reactionEmoji: {
     fontSize: 20,
   },
+  // The + button that opens the full emoji list.
+  reactionMore: {
+    borderColor: colors.yellow,
+    borderStyle: 'dashed',
+  },
+  reactionMoreLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    lineHeight: 26,
+    color: colors.yellow,
+    paddingHorizontal: 4,
+  },
+  pickerBack: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  picker: {
+    gap: 12,
+  },
+  pickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  pickerItem: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
   reactionCount: {
     fontFamily: fonts.bold,
     fontSize: 14,
@@ -604,56 +613,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.ink,
     marginTop: 2,
-  },
-  secretHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  step: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.red,
-    borderWidth: 3,
-    borderColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumber: {
-    fontFamily: fonts.comic,
-    fontSize: 16,
-    color: colors.white,
-    marginTop: 2,
-  },
-  final: {
-    backgroundColor: colors.red,
-    borderRadius: 18,
-    borderWidth: 3,
-    borderColor: colors.yellow,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  finalText: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.white,
-    textAlign: 'center',
-    ...comicShadow,
-  },
-  latest: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: colors.white,
-  },
-  latestName: {
-    fontFamily: fonts.bold,
-    color: colors.cyan,
-  },
-  asked: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    color: colors.cyan,
   },
   commentRow: {
     flexDirection: 'row',
@@ -761,13 +720,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.white,
   },
-  ballots: {
-    gap: 8,
-  },
   ballot: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  awardPanel: {
+    gap: 8,
+  },
+  voteCount: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: 8,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,210,31,0.18)',
+  },
+  voteCountLabel: {
+    flexShrink: 0,
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.yellow,
+  },
+  voteCountHint: {
+    flexShrink: 0,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.white,
   },
   ballotName: {
     fontFamily: fonts.bold,
