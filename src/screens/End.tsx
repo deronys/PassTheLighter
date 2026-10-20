@@ -1,16 +1,16 @@
 // The end of a game: every secret revealed, comments, award votes and the champion.
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, everyoneVoted, lastHolder, players, results } from '../online/rules';
+import { type Game, MAX_COMMENT, REACTIONS, everyoneVoted, lastHolder, players, results } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, BubbleText, ComicButton, Panel, PassBanner, Screen, SpeechBubble, Title } from '../ui/kit';
+import { Avatar, BubbleText, ComicButton, Panel, PassBanner, LighterIcon, Screen, SpeechBubble, Title, art } from '../ui/kit';
 import { useGameBar } from './gameBar';
 
 const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
@@ -29,19 +29,68 @@ function Missing({ title }: { title: string }) {
   );
 }
 
-// The game is over: all questions revealed, in order, ready to comment on.
+// Shown once before the reveal: the game is over and the secrets are coming out.
+export function EndIntro({ game }: { game: Game }) {
+  const nav = useNav();
+  const { seeEnd } = useStore();
+  const bar = useGameBar(game);
+  const name = useName();
+  const ender = lastHolder(game);
+  // A quick double tap on the final pass must not skip this screen.
+  const ready = useRef(false);
+  useEffect(() => {
+    const t = setTimeout(() => (ready.current = true), 800);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <Screen
+      title="GAME OVER"
+      onBack={nav.back}
+      {...bar}
+      onChat={undefined}
+      footer={<ComicButton label="REVEAL THE SECRETS!" sound="pop" onPress={() => ready.current && seeEnd(game.id)} />}
+    >
+      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <Image source={art.handLighter} style={styles.introArt} resizeMode="contain" />
+      <Title size={34} style={styles.center}>
+        THE LIGHTER WENT OUT!
+      </Title>
+      <Text style={styles.introText}>
+        {ender ? `${name(ender)} got the lighter 3 times, so the game is over.` : 'The host ended the game.'} Now every secret comes out!
+      </Text>
+      <Panel style={styles.introSteps}>
+        <IntroStep icon="🔍" text="See who passed the lighter to whom, and why" />
+        <IntroStep icon="😂" text="React with emojis and comment on every move" />
+        <IntroStep icon="🏆" text="Vote for the awards and crown the Lighter Champion" />
+      </Panel>
+    </Screen>
+  );
+}
+
+function IntroStep({ icon, text }: { icon: string; text: string }) {
+  return (
+    <View style={styles.introStep}>
+      <Text style={styles.introIcon}>{icon}</Text>
+      <Text style={styles.introStepText}>{text}</Text>
+    </View>
+  );
+}
+
+// The reveal: every move in order, who passed the lighter to whom and the
+// question that made them do it, with reactions and comments.
 export function GameOver({ game }: { game: Game }) {
   const nav = useNav();
-  const { me, user } = useStore();
+  const { state, me, user, react } = useStore();
   const bar = useGameBar(game);
   const name = useName();
   const ender = lastHolder(game);
   const voted = !!game.votes[me.id];
   const isPlayer = players(game).includes(me.id);
+  if (!state.endSeen[game.id]) return <EndIntro game={game} />;
 
   const footer = isPlayer ? (
     voted || everyoneVoted(game) ? (
-      <ComicButton label="RESULTS" color="yellow" onPress={() => nav.push({ name: 'results', id: game.id })} />
+      <ComicButton label="VOTING RESULTS" color="yellow" onPress={() => nav.push({ name: 'results', id: game.id })} />
     ) : (
       <ComicButton label="VOTE NOW!" sound={null} onPress={() => nav.push({ name: 'vote', id: game.id })} />
     )
@@ -67,41 +116,98 @@ export function GameOver({ game }: { game: Game }) {
       <Title size={26} style={styles.center}>
         ALL SECRETS REVEALED!
       </Title>
-      <Text style={styles.hint}>Tap a question to comment on it.</Text>
+      <Panel style={styles.tip}>
+        <Text style={styles.tipText}>
+          Tap an emoji to react, or <Text style={styles.tipStrong}>💬 COMMENT</Text> to say what you think about each move!
+        </Text>
+      </Panel>
       {game.passes.map((p, i) => {
         const comments = game.comments.filter((c) => c.passIndex === i);
         const latest = comments[comments.length - 1];
         return (
-          <Pressable key={i} accessibilityRole="button" accessibilityLabel={`Comments on question ${i + 1}`} onPress={() => nav.push({ name: 'comments', id: game.id, index: i })}>
-            <Panel style={styles.secret}>
-              <View style={styles.secretHead}>
-                <Step n={i + 1} />
-                <Avatar user={user(p.from)} size={48} label={name(p.from)} />
-                <Arrow />
-                <Avatar user={user(p.to)} size={48} label={name(p.to)} />
-                <View style={styles.grow} />
-                <View style={styles.commentCount}>
-                  <Text style={styles.commentCountLabel}>💬 {comments.length}</Text>
-                </View>
-              </View>
-              {p.question ? (
-                <SpeechBubble tail="top">
-                  <BubbleText>{p.question}</BubbleText>
-                </SpeechBubble>
-              ) : (
-                <FinalPass name={name(p.to)} />
-              )}
-              {latest && (
-                <Text style={styles.latest} numberOfLines={1}>
-                  <Text style={styles.latestName}>{name(latest.from)}: </Text>
-                  {latest.text}
-                </Text>
-              )}
-            </Panel>
-          </Pressable>
+          <Panel key={i} style={styles.secret}>
+            <Move game={game} index={i} />
+            <View style={styles.reactions}>
+              {REACTIONS.map((emoji) => {
+                const who = game.reactions.filter((r) => r.passIndex === i && r.emoji === emoji);
+                const mine = who.some((r) => r.from === me.id);
+                return (
+                  <Pressable
+                    key={emoji}
+                    accessibilityRole="button"
+                    accessibilityLabel={`React ${emoji} to move ${i + 1}`}
+                    accessibilityState={{ selected: mine }}
+                    disabled={!isPlayer}
+                    onPress={() => {
+                      play('pop');
+                      react(game.id, i, emoji);
+                    }}
+                    style={[styles.reaction, mine && styles.reactionMine]}
+                  >
+                    <Text style={styles.reactionEmoji}>{emoji}</Text>
+                    {who.length > 0 && <Text style={styles.reactionCount}>{who.length}</Text>}
+                  </Pressable>
+                );
+              })}
+            </View>
+            {latest && (
+              <Text style={styles.latest} numberOfLines={1}>
+                <Text style={styles.latestName}>{name(latest.from)}: </Text>
+                {latest.text}
+              </Text>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Comments on move ${i + 1}`}
+              onPress={() => nav.push({ name: 'comments', id: game.id, index: i })}
+              style={styles.commentButton}
+            >
+              <Text style={styles.commentButtonLabel}>
+                💬 {comments.length ? `${comments.length} ${comments.length === 1 ? 'COMMENT' : 'COMMENTS'}` : 'COMMENT'}
+              </Text>
+            </Pressable>
+          </Panel>
         );
       })}
     </Screen>
+  );
+}
+
+// One move of the reveal: who gave the lighter to whom, and the question they
+// were answering by doing it (the one they had been asked).
+function Move({ game, index, size = 48 }: { game: Game; index: number; size?: number }) {
+  const { user, me } = useStore();
+  const name = useName();
+  const p = game.passes[index];
+  const reason = game.passes[index - 1];
+  const final = index === game.passes.length - 1 && lastHolder(game) === p.to;
+  return (
+    <View style={styles.move}>
+      <View style={styles.secretHead}>
+        <Step n={index + 1} />
+        <Avatar user={user(p.from)} size={size} label={name(p.from)} />
+        <View style={styles.moveArrow}>
+          <View accessibilityLabel="passed the lighter to">
+            <LighterIcon size={30} />
+          </View>
+          <Arrow />
+        </View>
+        <Avatar user={user(p.to)} size={size} label={name(p.to)} />
+      </View>
+      {reason ? (
+        <>
+          <Text style={styles.asked}>
+            BECAUSE {name(reason.from).toUpperCase()} ASKED {reason.to === me.id ? 'YOU' : name(reason.to).toUpperCase()}:
+          </Text>
+          <SpeechBubble tail="top">
+            <BubbleText>{reason.question}</BubbleText>
+          </SpeechBubble>
+        </>
+      ) : (
+        <Text style={styles.asked}>THE HOST STARTED THE GAME</Text>
+      )}
+      {final && <FinalPass name={name(p.to)} />}
+    </View>
   );
 }
 
@@ -130,7 +236,7 @@ function Arrow() {
   );
 }
 
-// Comments on one revealed question.
+// Comments on one revealed move.
 export function Comments({ id, index }: { id: string; index: number }) {
   const nav = useNav();
   const { game, me, user, comment } = useStore();
@@ -170,7 +276,7 @@ export function Comments({ id, index }: { id: string; index: number }) {
               placeholder="Write a comment"
               placeholderTextColor="#8A8A8A"
               style={styles.input}
-              maxLength={140}
+              maxLength={MAX_COMMENT}
               onSubmitEditing={() => send(text)}
             />
             <ComicButton label="SEND" small disabled={!text.trim()} onPress={() => send(text)} sound={null} />
@@ -179,29 +285,7 @@ export function Comments({ id, index }: { id: string; index: number }) {
       }
     >
       <Panel style={styles.secret}>
-        <View style={styles.secretHead}>
-          <Step n={index + 1} />
-          <Avatar user={user(p.from)} size={56} label={name(p.from)} />
-          <Arrow />
-          <Avatar user={user(p.to)} size={56} label={name(p.to)} />
-        </View>
-        {p.question ? (
-          <>
-            <Text style={styles.asked}>
-              {name(p.from)} asked {p.to === me.id ? 'you' : name(p.to)}:
-            </Text>
-            <SpeechBubble tail="top">
-              <BubbleText>{p.question}</BubbleText>
-            </SpeechBubble>
-          </>
-        ) : (
-          <FinalPass name={name(p.to)} />
-        )}
-        {g.passes[index + 1] && (
-          <Text style={styles.answer}>
-            {name(p.to)} answered: <Text style={styles.answerName}>{name(g.passes[index + 1].to)}</Text>
-          </Text>
-        )}
+        <Move game={g} index={index} size={56} />
       </Panel>
       {list.length === 0 && <Text style={styles.hint}>No comments yet. Be the first!</Text>}
       {list.map((c, i) => (
@@ -272,7 +356,14 @@ export function Vote({ id }: { id: string }) {
                   }}
                   style={[styles.choice, picks[c] && picks[c] !== p && styles.dim]}
                 >
-                  <Avatar user={user(p)} size={54} selected={picks[c] === p} label={firstName(user(p))} labelColor={picks[c] === p ? colors.yellow : colors.cyan} />
+                  <View style={[styles.pickBox, picks[c] === p && styles.pickBoxOn]}>
+                    <Avatar user={user(p)} size={54} selected={picks[c] === p} selectedColor={colors.green} label={firstName(user(p))} labelColor={picks[c] === p ? colors.green : colors.cyan} />
+                    {picks[c] === p && (
+                      <View style={styles.pickCheck}>
+                        <Text style={styles.pickCheckMark}>✓</Text>
+                      </View>
+                    )}
+                  </View>
                 </Pressable>
               ))}
             </View>
@@ -289,13 +380,14 @@ export function Results({ id }: { id: string }) {
   const { game, me, user } = useStore();
   const bar = useGameBar(game(id));
   const name = useName();
+  const [showVotes, setShowVotes] = useState(false);
   const g = game(id);
-  if (!g) return <Missing title="RESULTS" />;
+  if (!g) return <Missing title="VOTING RESULTS" />;
   const all = players(g);
 
   if (!everyoneVoted(g)) {
     return (
-      <Screen title="RESULTS" onBack={nav.back} {...bar}>
+      <Screen title="VOTING RESULTS" onBack={nav.back} {...bar}>
         <Title size={26} style={styles.center}>
           WAITING FOR VOTES...
         </Title>
@@ -315,7 +407,7 @@ export function Results({ id }: { id: string }) {
   const r = results(g);
   const ranking = [...all].sort((a, b) => (r.totals[b] ?? 0) - (r.totals[a] ?? 0));
   return (
-    <Screen title="RESULTS" onBack={nav.back} {...bar}>
+    <Screen title="VOTING RESULTS" onBack={nav.back} {...bar}>
       <Panel style={styles.champion}>
         <Text style={styles.trophy}>🏆</Text>
         <Title size={30} style={styles.center}>
@@ -362,6 +454,31 @@ export function Results({ id }: { id: string }) {
           <Text style={styles.rankVotes}>{r.totals[p] ?? 0}</Text>
         </View>
       ))}
+      <ComicButton label={showVotes ? 'HIDE WHO VOTED' : 'SEE WHO VOTED FOR WHO'} color="yellow" onPress={() => setShowVotes((v) => !v)} />
+      {showVotes &&
+        g.categories.map((c) => {
+          const cat = findCategory(c);
+          return (
+            <Panel key={c} style={styles.ballots}>
+              <Text style={styles.awardTitle}>
+                {cat.emoji} {cat.title}
+              </Text>
+              {all.map((voter) => {
+                const pick = g.votes[voter]?.[c];
+                if (!pick) return null;
+                return (
+                  <View key={voter} style={styles.ballot}>
+                    <Avatar user={user(voter)} size={32} />
+                    <Text style={styles.ballotName}>{name(voter)}</Text>
+                    <Text style={styles.ballotArrow}>→</Text>
+                    <Avatar user={user(pick)} size={32} />
+                    <Text style={styles.ballotName}>{name(pick)}</Text>
+                  </View>
+                );
+              })}
+            </Panel>
+          );
+        })}
     </Screen>
   );
 }
@@ -399,6 +516,95 @@ const styles = StyleSheet.create({
   secret: {
     gap: 10,
   },
+  move: {
+    gap: 8,
+  },
+  moveArrow: {
+    alignItems: 'center',
+  },
+  introArt: {
+    width: '100%',
+    height: 190,
+  },
+  introText: {
+    fontFamily: fonts.body,
+    fontSize: 19,
+    lineHeight: 26,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  introSteps: {
+    gap: 14,
+  },
+  introStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  introIcon: {
+    fontSize: 30,
+  },
+  introStepText: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    color: colors.white,
+  },
+  tip: {
+    borderWidth: 2,
+    borderColor: colors.yellow,
+  },
+  tipText: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  tipStrong: {
+    fontFamily: fonts.bold,
+    color: colors.yellow,
+  },
+  reactions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  reaction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  reactionMine: {
+    borderColor: colors.yellow,
+    backgroundColor: 'rgba(255,210,31,0.25)',
+  },
+  reactionEmoji: {
+    fontSize: 20,
+  },
+  reactionCount: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.white,
+  },
+  commentButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.yellow,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  commentButtonLabel: {
+    fontFamily: fonts.comic,
+    fontSize: 15,
+    color: colors.ink,
+    marginTop: 2,
+  },
   secretHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -435,17 +641,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     ...comicShadow,
   },
-  commentCount: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  commentCountLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    color: colors.white,
-  },
   latest: {
     fontFamily: fonts.body,
     fontSize: 15,
@@ -459,15 +654,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 17,
     color: colors.cyan,
-  },
-  answer: {
-    fontFamily: fonts.body,
-    fontSize: 17,
-    color: colors.white,
-  },
-  answerName: {
-    fontFamily: fonts.comic,
-    color: colors.yellow,
   },
   commentRow: {
     flexDirection: 'row',
@@ -546,6 +732,52 @@ const styles = StyleSheet.create({
   },
   choice: {
     alignItems: 'center',
+  },
+  pickBox: {
+    padding: 4,
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+  pickBoxOn: {
+    borderColor: colors.green,
+    backgroundColor: 'rgba(139,224,78,0.2)',
+  },
+  pickCheck: {
+    position: 'absolute',
+    top: -6,
+    left: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.green,
+    borderWidth: 2,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickCheckMark: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.white,
+  },
+  ballots: {
+    gap: 8,
+  },
+  ballot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ballotName: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.white,
+  },
+  ballotArrow: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.yellow,
   },
   dim: {
     opacity: 0.45,

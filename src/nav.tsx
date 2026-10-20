@@ -18,10 +18,13 @@ export type Route =
   | { name: 'chat'; id: string }
   | { name: 'comments'; id: string; index: number }
   | { name: 'vote'; id: string }
-  | { name: 'results'; id: string };
+  | { name: 'results'; id: string }
+  | { name: 'photo'; source: string };
 
 type Nav = {
   route: Route;
+  // The screen Back would return to.
+  previous: Route | undefined;
   push: (route: Route) => void;
   replace: (route: Route) => void;
   back: () => void;
@@ -37,6 +40,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const nav = useMemo<Nav>(
     () => ({
       route: stack[stack.length - 1],
+      previous: stack[stack.length - 2],
       push: (route) => setStack((s) => [...s, route]),
       replace: (route) => setStack((s) => [...s.slice(0, -1), route]),
       back: () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)),

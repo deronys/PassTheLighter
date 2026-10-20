@@ -8,7 +8,7 @@ import { type Deck, draw, newDeck } from '../deck';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, canSee, isFinalPass, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
+import { type Game, MAX_QUESTION, canSee, isFinalPass, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
@@ -74,10 +74,16 @@ function HolderScreen({ game }: { game: Game }) {
   // Their 3rd lighter ends the game, so there is no question to ask.
   const final = isFinalPass(game, target.id);
 
-  const footer = final ? (
-    <ComicButton label="FINAL PASS!" sound={null} onPress={() => pass(game.id, target.id, '')} />
-  ) : (
-    <ComicButton label="PASS AND ASK!" sound={null} onPress={() => nav.push({ name: 'ask', id: game.id, to: target.id })} />
+  // Two clear choices: look at the game so far, or pass the lighter on.
+  const footer = (
+    <View style={styles.row}>
+      <ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} style={styles.grow} />
+      {final ? (
+        <ComicButton label="PASS!" sound={null} onPress={() => pass(game.id, target.id, '')} style={styles.grow} />
+      ) : (
+        <ComicButton label="PASS!" sound={null} onPress={() => nav.push({ name: 'ask', id: game.id, to: target.id })} style={styles.grow} />
+      )}
+    </View>
   );
 
   return (
@@ -170,7 +176,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
                 placeholder="TYPE YOUR QUESTION"
                 placeholderTextColor="#9A9A9A"
                 multiline
-                maxLength={140}
+                maxLength={MAX_QUESTION}
                 style={styles.input}
               />
             </SpeechBubble>
@@ -272,6 +278,10 @@ const styles = StyleSheet.create({
   },
   grow: {
     flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
   },
   center: {
     alignItems: 'center',

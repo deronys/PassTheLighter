@@ -6,7 +6,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, 
 
 import { setMuted } from '../feedback';
 import { type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
-import { type Game, type User, addComment, burn, castVotes, createGame, passAndAsk, removeFor, respond, sendChat, startGame } from './rules';
+import { type Game, type User, addComment, toggleReaction, burn, castVotes, createGame, passAndAsk, removeFor, respond, sendChat, startGame } from './rules';
 
 // v2 started everyone's demo over (John asked for fresh test games in v0.10.0).
 const KEY = 'ptl.demo.v2';
@@ -37,10 +37,20 @@ type Store = {
   seeChat: (gameId: string) => void;
   comment: (gameId: string, passIndex: number, text: string) => void;
   vote: (gameId: string, picks: Record<string, string>) => void;
-  setPhoto: (photo: string | undefined) => void;
+  // The cropped photo, and the full picture it was cut from.
+  setPhoto: (photo: string | undefined, source?: string) => void;
+  react: (gameId: string, passIndex: number, emoji: string) => void;
+  seeEnd: (gameId: string) => void;
 };
 
 const Context = createContext<Store | null>(null);
+
+// Saved games from older versions get the fields added since.
+function upgrade(saved: Partial<DemoState>): DemoState {
+  const base = newDemo();
+  const empty = { chat: [], comments: [], reactions: [], categories: [], votes: {} };
+  return { ...base, ...saved, games: (saved.games ?? []).map((g) => ({ ...empty, ...g })) };
+}
 
 const UNKNOWN: User = { id: '?', name: 'Someone', color: '#666666' };
 
@@ -55,7 +65,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((raw) => {
-        if (raw) setState({ ...newDemo(), ...JSON.parse(raw) });
+        if (raw) setState(upgrade(JSON.parse(raw)));
       })
       .catch(() => undefined)
       .finally(() => setReady(true));
@@ -66,12 +76,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setMuted(!state.settings.sound);
   }, [state, ready]);
 
-  // The bots' clock.
+  // The bots' clock. It checks often so a bot moves right on time, but only
+  // redraws the countdowns once a second.
   useEffect(() => {
     if (!ready) return;
+    let second = 0;
     const timer = setInterval(() => {
       const t = Date.now();
-      setNow(t);
+      if (Math.floor(t / 1000) !== second) {
+        second = Math.floor(t / 1000);
+        setNow(t);
+      }
       const before = latest.current;
       const after = tick(before, t);
       if (after !== before) {
@@ -83,14 +98,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         setState(after);
       }
-    }, 1000);
+    }, 100);
     return () => clearInterval(timer);
   }, [ready]);
 
   const store = useMemo<Store>(() => {
     const update = (fn: (s: DemoState) => DemoState) => setState((s) => fn(s));
+    // A move the rules refuse (a double tap, a game that just ended) leaves the
+    // game as it was instead of crashing the app.
     const onGame = (id: string, fn: (g: Game, me: string) => Game) =>
-      update((s) => ({ ...s, games: s.games.map((g) => (g.id === id ? fn(g, s.me!.id) : g)) }));
+      update((s) => ({
+        ...s,
+        games: s.games.map((g) => {
+          if (g.id !== id) return g;
+          try {
+            return fn(g, s.me!.id);
+          } catch {
+            return g;
+          }
+        }),
+      }));
     const me = state.me ?? UNKNOWN;
     return {
       ready,
@@ -127,7 +154,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
       comment: (id, index, text) => onGame(id, (g, u) => addComment(g, u, index, text, Date.now())),
       vote: (id, picks) => onGame(id, (g, u) => castVotes(g, u, picks)),
-      setPhoto: (photo) => update((s) => (s.me ? { ...s, me: { ...s.me, photo } } : s)),
+      setPhoto: (photo, source) =>
+        update((s) => (s.me ? { ...s, me: { ...s.me, photo }, photoSource: photo ? (source ?? s.photoSource) : undefined } : s)),
+      react: (id, index, emoji) => onGame(id, (g, u) => toggleReaction(g, u, index, emoji)),
+      seeEnd: (id) => update((s) => (s.endSeen[id] ? s : { ...s, endSeen: { ...s.endSeen, [id]: true } })),
     };
   }, [state, ready, now, toast]);
 

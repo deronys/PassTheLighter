@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { play } from '../feedback';
 import { useNav } from '../nav';
-import { pickProfilePhoto } from '../photo';
+import { pickPhoto } from '../photo';
 import { players, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, fonts } from '../theme';
@@ -17,8 +17,9 @@ export function Settings() {
   const [photoError, setPhotoError] = useState(false);
   const changePhoto = () => {
     setPhotoError(false);
-    pickProfilePhoto()
-      .then((photo) => photo && setPhoto(photo))
+    // Pick a picture, then choose the part that shows in your frame.
+    pickPhoto()
+      .then((picked) => picked && nav.push({ name: 'photo', source: picked.uri }))
       .catch(() => setPhotoError(true));
   };
 
@@ -35,7 +36,10 @@ export function Settings() {
           <Text style={styles.name}>{me.name}</Text>
           <Text style={styles.small}>Signed in (demo)</Text>
           <View style={styles.photoButtons}>
-            <ComicButton label={me.photo ? 'CHANGE PHOTO' : 'ADD PHOTO'} small color="yellow" onPress={changePhoto} />
+            <ComicButton label={me.photo ? 'CHANGE' : 'ADD PHOTO'} small color="yellow" onPress={changePhoto} />
+            {me.photo && state.photoSource && (
+              <ComicButton label="ADJUST" small color="yellow" onPress={() => nav.push({ name: 'photo', source: state.photoSource! })} />
+            )}
             {me.photo && (
               <Pressable accessibilityRole="button" onPress={() => setPhoto(undefined)} hitSlop={8}>
                 <Text style={styles.remove}>Remove</Text>
@@ -153,6 +157,7 @@ const styles = StyleSheet.create({
   },
   photoButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 12,
     marginTop: 8,

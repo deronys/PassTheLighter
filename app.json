@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pass The Lighter",
     "slug": "pass-the-lighter",
-    "version": "0.10.3",
+    "version": "0.11.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -27,7 +27,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Pass The Lighter uses your photos so you can pick a profile picture."
+          "photosPermission": "Pass The Lighter uses your photos so you can pick a profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ]
     ]

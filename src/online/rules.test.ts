@@ -12,6 +12,7 @@ import {
   lastHolder,
   results,
   sendChat,
+  toggleReaction,
   burn,
   canSee,
   canStart,
@@ -24,8 +25,7 @@ import {
   respond,
   roleOf,
   startGame,
-  visibleTo,
-} from './rules.ts';
+  visibleTo, MAX_COMMENT } from './rules.ts';
 
 function started() {
   let g = createGame('g', 'Test', 'a', ['b', 'c', 'd', 'e'], 0);
@@ -163,4 +163,23 @@ test('players vote in every category, never for themselves, and the most voted i
   assert.equal(r.totals.c, 8);
   assert.deepEqual(r.champions, ['b']);
   assert.deepEqual(r.winners[c1], ['b', 'c']);
+});
+
+test('reactions toggle on revealed moves', () => {
+  let g = finished();
+  assert.throws(() => toggleReaction(started(), 'a', 0, '😂'));
+  assert.throws(() => toggleReaction(g, 'a', 0, '🍕'));
+  g = toggleReaction(g, 'a', 1, '😂');
+  g = toggleReaction(g, 'b', 1, '😂');
+  assert.equal(g.reactions.length, 2);
+  g = toggleReaction(g, 'a', 1, '😂');
+  assert.deepEqual(g.reactions, [{ from: 'b', passIndex: 1, emoji: '😂' }]);
+});
+
+test('only players can comment or react, and long texts are refused', () => {
+  const g = finished();
+  assert.throws(() => addComment(g, 'stranger', 0, 'Hi', 0));
+  assert.throws(() => toggleReaction(g, 'stranger', 0, '😂'));
+  assert.throws(() => addComment(g, 'a', 0, 'x'.repeat(MAX_COMMENT + 1), 0));
+  assert.equal(addComment(g, 'a', 0, 'x'.repeat(MAX_COMMENT), 0).comments.length, g.comments.length + 1);
 });

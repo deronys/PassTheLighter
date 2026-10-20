@@ -14,6 +14,7 @@ import { Comments, Results, Vote } from './src/screens/End';
 import { Login, MainMenu, Splash, Tutorial } from './src/screens/Entry';
 import { Friends, Settings } from './src/screens/Extras';
 import { GameList, InviteFriends } from './src/screens/Lobby';
+import { PhotoCrop } from './src/screens/PhotoCrop';
 import { AskQuestion, GameScreen } from './src/screens/Play';
 import { Advertisement, BurnQuestion, GameProgress } from './src/screens/Reveal';
 import { colors, fonts } from './src/theme';
@@ -80,6 +81,8 @@ function render(route: Route) {
       return <Vote id={route.id} />;
     case 'results':
       return <Results id={route.id} />;
+    case 'photo':
+      return <PhotoCrop source={route.source} />;
   }
 }
 

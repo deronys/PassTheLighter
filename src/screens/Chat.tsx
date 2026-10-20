@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, type ScrollViewInstance, St
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { players } from '../online/rules';
+import { MAX_CHAT, players } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, ComicButton, Screen } from '../ui/kit';
@@ -60,7 +60,7 @@ export function Chat({ id }: { id: string }) {
                 placeholder="Say something..."
                 placeholderTextColor="#8A8A8A"
                 style={styles.input}
-                maxLength={200}
+                maxLength={MAX_CHAT}
                 onSubmitEditing={send}
                 returnKeyType="send"
               />

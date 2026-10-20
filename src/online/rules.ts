@@ -20,6 +20,10 @@ export const LIGHTERS_TO_END = 3;
 export const CATEGORIES_PER_GAME = 5;
 // How long invitations stay open in the waiting room.
 export const INVITE_WINDOW_MS = 2 * 60 * 1000;
+// Longest question, chat message and comment a player can write.
+export const MAX_QUESTION = 140;
+export const MAX_CHAT = 200;
+export const MAX_COMMENT = 140;
 
 export type User = {
   id: string;
@@ -58,6 +62,15 @@ export type Comment = {
   at: number;
 };
 
+// An emoji reaction on a revealed move, once the game is over.
+export type Reaction = {
+  from: string;
+  passIndex: number;
+  emoji: string;
+};
+
+export const REACTIONS = ['😂', '😱', '🔥', '🙈', '💀', '❤️'];
+
 export type GameStatus = 'waiting' | 'active' | 'finished';
 
 export type Game = {
@@ -82,6 +95,7 @@ export type Game = {
   // When the game ended, and what happens after: comments and award votes.
   endedAt?: number;
   comments: Comment[];
+  reactions: Reaction[];
   // The award categories to vote on, picked when the game ends.
   categories: string[];
   // voter -> category -> who they voted for.
@@ -116,6 +130,7 @@ export function createGame(id: string, name: string, host: string, invited: stri
     hiddenFor: [],
     chat: [],
     comments: [],
+    reactions: [],
     categories: [],
     votes: {},
   };
@@ -159,6 +174,7 @@ export function passAndAsk(game: Game, from: string, to: string, question: strin
   // The pass that gives someone their last lighter ends the game, so it carries no question.
   const text = isFinalPass(game, to) ? '' : question.trim();
   if (!text && !isFinalPass(game, to)) throw new Error('Write a question first');
+  if (text.length > MAX_QUESTION) throw new Error('That question is too long');
   const next = { ...game, holder: to, passes: [...game.passes, { from, to, question: text, at: now }], lastMoveAt: now };
   return receives(next)[to] >= LIGHTERS_TO_END ? finish(next, now) : next;
 }
@@ -243,6 +259,7 @@ export function sendChat(game: Game, from: string, text: string, now: number): G
   const t = text.trim();
   if (!t) return game;
   if (!isPlayer(game, from)) throw new Error('Only players can chat');
+  if (t.length > MAX_CHAT) throw new Error('That message is too long');
   return { ...game, chat: [...game.chat, { from, text: t, at: now }] };
 }
 
@@ -250,8 +267,21 @@ export function addComment(game: Game, from: string, passIndex: number, text: st
   const t = text.trim();
   if (game.status !== 'finished') throw new Error('Comments open when the game is over');
   if (!game.passes[passIndex]) throw new Error('No such question');
+  if (!isPlayer(game, from)) throw new Error('Only players can comment');
+  if (t.length > MAX_COMMENT) throw new Error('That comment is too long');
   if (!t) return game;
   return { ...game, comments: [...game.comments, { from, passIndex, text: t, at: now }] };
+}
+
+// Tapping an emoji adds your reaction to a move; tapping it again takes it back.
+export function toggleReaction(game: Game, from: string, passIndex: number, emoji: string): Game {
+  if (game.status !== 'finished') throw new Error('Reactions open when the game is over');
+  if (!game.passes[passIndex] || !REACTIONS.includes(emoji)) throw new Error('No such reaction');
+  if (!isPlayer(game, from)) throw new Error('Only players can react');
+  const mine = (r: Reaction) => r.from === from && r.passIndex === passIndex && r.emoji === emoji;
+  return game.reactions.some(mine)
+    ? { ...game, reactions: game.reactions.filter((r) => !mine(r)) }
+    : { ...game, reactions: [...game.reactions, { from, passIndex, emoji }] };
 }
 
 // One vote per category. Nobody can vote for themselves.

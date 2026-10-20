@@ -2,6 +2,29 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.11.0 - 2026-10-20
+
+Changes from John's "Improvements New Version V3".
+
+- When a game ends, a "The lighter went out!" screen says the game is over and the secrets are about to be revealed, before the reveal itself.
+- The reveal shows who gave the lighter to whom (for example Claire → Dimitris), with a small lighter above the arrow and the question that made them pick that person.
+- React to each move with an emoji right in the reveal, without opening the comments. A tip at the top says you can react or comment.
+- After you vote, the button says "VOTING RESULTS". The results have "SEE WHO VOTED FOR WHO", which lists every ballot per award.
+- The player you pick when voting gets a green box and a tick.
+- New lighter icon in the top right corner, no longer cut off on the left.
+- Demo players take exactly 10 seconds per move.
+- With the lighter, the screen has two buttons: HISTORY and PASS!.
+- Without the lighter, tapping a game in the game list opens that game's history.
+- After picking a profile photo, a new screen lets you drag and zoom it inside the profile frame and choose the final cut. "ADJUST" in Settings reopens it at any time.
+
+Fixes from the security check:
+
+- The Android app no longer asks for microphone and camera access. The photo picker added them by default, but the game only needs your photo library.
+- A move the rules refuse (for example a double tap right as a game ends) is ignored instead of being able to crash the app.
+- A double tap on the final pass no longer skips the "The lighter went out!" screen.
+- Only players can comment or react, and over-long questions, chat messages and comments are refused by the rules, not only by the text boxes.
+- Cropping a photo can never ask for a square past the picture's edge.
+
 ## v0.10.3 - 2026-10-20
 
 - Removed the pass and flick sounds completely. Passing the lighter and the main buttons (Play, Create Game, Pass and Ask, Burn It, Vote Now and others) are silent until new sounds are chosen.

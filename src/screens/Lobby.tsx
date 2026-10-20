@@ -59,7 +59,8 @@ export function GameList() {
             key={game.id}
             accessibilityRole="button"
             accessibilityLabel={`${game.name}, ${status.label.toLowerCase()}`}
-            onPress={() => nav.push({ name: 'game', id: game.id })}
+            // Without the lighter, a running game opens on its history, to see where it stands.
+            onPress={() => nav.push(role === 'watcher' || role === 'lastPasser' ? { name: 'progress', id: game.id } : { name: 'game', id: game.id })}
           >
             <Panel style={styles.gameCard}>
               {!hostOnRight && hostBlock}

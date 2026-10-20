@@ -10,7 +10,7 @@ import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
 import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
-import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
+import { Avatar, BubbleText, ComicButton, HiddenTicket, LighterIcon, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -170,8 +170,12 @@ export function GameProgress({ id }: { id: string }) {
     <Screen title="GAME PROGRESS" onBack={nav.back} {...bar} onLighters={undefined}>
       <Text style={styles.gameName}>{g.name.toUpperCase()}</Text>
       {holder?.id === me.id ? (
-        // Back to the game screen, where you choose who gets the lighter.
-        <Pressable accessibilityRole="button" accessibilityLabel="You have the lighter. Click to pass it" onPress={nav.back}>
+        // To the game screen, where you choose who gets the lighter.
+        <Pressable accessibilityRole="button" accessibilityLabel="You have the lighter. Click to pass it" onPress={() => {
+            const prev = nav.previous;
+            if (prev?.name === 'game' && prev.id === id) nav.back();
+            else nav.replace({ name: 'game', id });
+          }}>
           <PassBanner left={<Avatar user={holder} size={70} lighter />}>
             <Title size={22} color={colors.white}>
               YOU HAVE THE LIGHTER.
@@ -213,9 +217,12 @@ export function GameProgress({ id }: { id: string }) {
               )}
             </View>
             <Avatar user={user(p.from)} size={56} label={p.from === me.id ? 'You' : firstName(user(p.from))} />
-            <Svg width={26} height={30} viewBox="0 0 26 30">
-              <Polygon points="2,2 24,15 2,28" fill="none" stroke={colors.yellow} strokeWidth={3.5} strokeLinejoin="round" />
-            </Svg>
+            <View style={styles.moveArrow} accessibilityLabel="passed the lighter to">
+              <LighterIcon size={26} />
+              <Svg width={22} height={26} viewBox="0 0 26 30">
+                <Polygon points="2,2 24,15 2,28" fill="none" stroke={colors.yellow} strokeWidth={3.5} strokeLinejoin="round" />
+              </Svg>
+            </View>
             <Avatar user={user(p.to)} size={56} count={counts[i]} label={p.to === me.id ? 'You' : firstName(user(p.to))} />
           </View>
         );
@@ -383,6 +390,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.white,
     marginTop: 2,
+  },
+  moveArrow: {
+    alignItems: 'center',
   },
   progressQuestion: {
     flex: 1,

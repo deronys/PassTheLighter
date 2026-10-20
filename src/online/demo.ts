@@ -15,6 +15,8 @@ import {
   respond,
   sendChat,
   startGame,
+  toggleReaction,
+  REACTIONS,
 } from './rules.ts';
 
 export type Settings = { sound: boolean; notifications: boolean };
@@ -28,6 +30,10 @@ export type DemoState = {
   settings: Settings;
   // How many chat messages you have seen in each game, for the unread count.
   chatSeen: Record<string, number>;
+  // Games whose "game over" intro screen you have already seen.
+  endSeen: Record<string, boolean>;
+  // The full picture behind your profile photo, so you can crop it again later.
+  photoSource?: string;
 };
 
 const COLORS = ['#E8452C', '#F2B705', '#2A9D8F', '#8E44AD', '#3A86FF', '#FF6F91', '#43AA8B', '#F3722C'];
@@ -66,11 +72,13 @@ const isBot = (state: DemoState, id: string) => id !== state.me?.id;
 // When a bot answers an invitation, and whether it says yes.
 const answerAt = (g: Game, bot: string) => g.createdAt + 1000 + chance(`${g.id}:${bot}:answer`) * 2000;
 const accepts = (g: Game, bot: string) => chance(`${g.id}:${bot}:yes`) < 0.85;
-// Bots answer within seconds, so a demo game moves fast enough to follow.
-const movesAt = (g: Game) => g.lastMoveAt + 2000 + chance(`${g.id}:${g.passes.length}:delay`) * 2000;
+// Bots pass the lighter a fixed time after the last move.
+// John asked for exactly 10 seconds, to have time to look at every screen.
+const BOT_MOVE_MS = 10_000;
+const movesAt = (g: Game) => g.lastMoveAt + BOT_MOVE_MS;
 
 export function newDemo(): DemoState {
-  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true }, chatSeen: {} };
+  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true }, chatSeen: {}, endSeen: {} };
 }
 
 // Signing in creates your profile and a few games so the demo isn't empty.
@@ -192,6 +200,14 @@ function botWrapUp(g: Game, state: DemoState, now: number): Game {
     const bot = bots[Math.floor(chance(`${key}:who`) * bots.length)];
     if (!bot || g.comments.some((c) => c.passIndex === i && c.from === bot)) return;
     g = addComment(g, bot, i, ROASTS[Math.floor(chance(`${key}:text`) * ROASTS.length)], now);
+  });
+  g.passes.forEach((_, i) => {
+    for (const bot of bots) {
+      const key = `${g.id}:react:${i}:${bot}`;
+      if (chance(key) > 0.35 || now < ended + 2500 + chance(`${key}:at`) * 6000) continue;
+      const emoji = REACTIONS[Math.floor(chance(`${key}:emoji`) * REACTIONS.length)];
+      if (!g.reactions.some((r) => r.from === bot && r.passIndex === i)) g = toggleReaction(g, bot, i, emoji);
+    }
   });
   for (const bot of bots) {
     if (g.votes[bot] || now < ended + 2000 + chance(`${g.id}:${bot}:vote`) * 4000) continue;

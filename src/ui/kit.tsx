@@ -115,11 +115,31 @@ export function LighterBadge({ count, onPress }: { count: number; onPress?: () =
       disabled={!onPress}
       style={styles.lighterBadge}
     >
-      <Image source={art.burst} style={styles.lighterBadgeArt} resizeMode="contain" />
+      <LighterIcon size={50} />
       <View style={styles.lighterBadgeCount}>
         <Text style={styles.lighterBadgeLabel}>x{count}</Text>
       </View>
     </Pressable>
+  );
+}
+
+// A whole lighter with its flame, drawn so nothing is cut off at any size.
+export function LighterIcon({ size = 40, flame = true }: { size?: number; flame?: boolean }) {
+  return (
+    <Svg width={size * 0.72} height={size} viewBox="0 0 36 50">
+      {flame && (
+        <>
+          <Path d="M18 1 C 24 8 26 12 24 17 C 23 20 20 21 18 21 C 14 21 12 18 12.5 15 C 13 11 16 9 18 1 Z" fill="#FF7A1A" stroke="#7A2A00" strokeWidth={1.5} />
+          <Path d="M18 8 C 21 12 22 15 20.5 18 C 19.5 19.5 16.5 19.5 15.5 17.5 C 14.5 15 16.5 12 18 8 Z" fill={colors.yellow} />
+        </>
+      )}
+      <Rect x={9} y={20} width={18} height={10} rx={2} fill="#D8DDE2" stroke="#3B3B3B" strokeWidth={1.5} />
+      <Circle cx={14} cy={25} r={1.3} fill="#5A5F66" />
+      <Circle cx={18} cy={25} r={1.3} fill="#5A5F66" />
+      <Circle cx={22} cy={25} r={1.3} fill="#5A5F66" />
+      <Rect x={5} y={29} width={26} height={20} rx={4} fill={colors.red} stroke="#5A0A05" strokeWidth={1.8} />
+      <Rect x={8} y={32} width={4} height={13} rx={2} fill="#FF8A7A" opacity={0.8} />
+    </Svg>
   );
 }
 
@@ -203,6 +223,8 @@ type AvatarProps = {
   // The yellow number in the corner: how many times they got the lighter.
   count?: number;
   selected?: boolean;
+  // The frame colour when selected (yellow unless given).
+  selectedColor?: string;
   // Shows the little red lighter, for whoever holds it.
   lighter?: boolean;
   label?: string;
@@ -210,14 +232,14 @@ type AvatarProps = {
 };
 
 // A player's picture: a framed tile with their initials, like the photo frames in the designs.
-export function Avatar({ user, size = 72, count, selected, lighter, label, labelColor = colors.cyan }: AvatarProps) {
+export function Avatar({ user, size = 72, count, selected, selectedColor = colors.yellow, lighter, label, labelColor = colors.cyan }: AvatarProps) {
   const radius = size * 0.2;
   return (
     <View style={styles.avatarWrap}>
       <View
         style={[
           styles.avatarFrame,
-          { width: size, height: size, borderRadius: radius, borderColor: selected ? colors.yellow : colors.white, borderWidth: selected ? 5 : 3 },
+          { width: size, height: size, borderRadius: radius, borderColor: selected ? selectedColor : colors.white, borderWidth: selected ? 5 : 3 },
         ]}
       >
         {user.photo ? (
@@ -422,10 +444,6 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  lighterBadgeArt: {
-    width: 52,
-    height: 60,
   },
   lighterBadgeCount: {
     position: 'absolute',
