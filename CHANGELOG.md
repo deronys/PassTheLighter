@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.10.2 - 2026-10-20
+
+- New sounds for passing the lighter (three quick rising bell notes instead of a whoosh) and for the main buttons (a bright "ding-ding" instead of a lighter hiss). John didn't like the hiss and whoosh.
+
 ## v0.10.1 - 2026-10-19
 
 - The pass that gives someone their 3rd lighter has no question: the button says "FINAL PASS!" and the game ends at once. The final pass shows as "3rd lighter. Game over!" in the reveal and the history.

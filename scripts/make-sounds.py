@@ -34,22 +34,21 @@ def mix(*tracks):
 def pad(t, dur):
     return t + [0.0] * max(0, int(dur * R) - len(t))
 
-# Whoosh: noise through a moving one-pole low-pass.
-def whoosh(dur=0.45):
-    n = int(R * dur); res = []; y = 0
-    for i in range(n):
-        p = i / n; cutoff = 0.05 + 0.5 * math.sin(math.pi * p)
-        y += cutoff * (random.uniform(-1, 1) - y)
-        res.append(y * math.sin(math.pi * p) ** 1.5)
-    return res
-save('pass', whoosh())
+# Bell: a soft sine with a quiet octave on top, no noise.
+def bell(freq, dur, decay=7.0):
+    n = int(R * dur)
+    return [(math.sin(2 * math.pi * freq * i / R) + 0.3 * math.sin(4 * math.pi * freq * i / R)) * math.exp(-decay * i / R) * env(i, n, 0.004, 0.2) for i in range(n)]
 
-# Lighter flick: metallic click, then a short burst of gas noise.
-click = [math.sin(2 * math.pi * 3200 * i / R) * math.exp(-60 * i / R) for i in range(int(R * 0.06))]
-gas = []; y = 0
-for i in range(int(R * 0.35)):
-    y += 0.3 * (random.uniform(-1, 1) - y); gas.append(y * 0.6 * math.exp(-5 * i / R))
-save('flick', mix((click, 0), (gas, 0.03)))
+# Pass: three quick rising bell notes, the lighter flying to the next player.
+save('pass', mix((bell(659.25, 0.3), 0), (bell(880, 0.3), 0.07), (bell(1318.5, 0.45, 5), 0.14)))
+
+# Flick: a bright two-note "ding-ding".
+save('flick', mix((bell(1046.5, 0.18, 14), 0), (bell(1568, 0.3, 9), 0.06)))
+
+# The earlier noise-based pass and flick drew these random numbers; drawing them
+# still keeps boom and drumroll exactly as they were.
+for _ in range(int(R * 0.45) + int(R * 0.35)):
+    random.uniform(-1, 1)
 
 save('pop', [math.sin(2 * math.pi * (500 + 900 * i / R / 0.08) * i / R) * math.exp(-40 * i / R) for i in range(int(R * 0.12))])
 save('tap', tone(880, 0.07, decay=40))
