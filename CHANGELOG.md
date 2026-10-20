@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.11.1 - 2026-10-20
+
+- The lighter in a star burst (on "You got it!", the pass banners and next to the player who has the lighter) was cut off on the left. It is cut again from the final design, whole and with a clean edge.
+
 ## v0.11.0 - 2026-10-20
 
 Changes from John's "Improvements New Version V3".

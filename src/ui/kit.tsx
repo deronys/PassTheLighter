@@ -249,7 +249,7 @@ export function Avatar({ user, size = 72, count, selected, selectedColor = color
             <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>{initials(user.name)}</Text>
           </LinearGradient>
         )}
-        {lighter && <Image source={art.burst} style={[styles.avatarLighter, { width: size * 0.42, height: size * 0.62 }]} resizeMode="contain" />}
+        {lighter && <Image source={art.burst} style={[styles.avatarLighter, { width: size * 0.6, height: size * 0.62 }]} resizeMode="contain" />}
         {count !== undefined && (
           <View style={[styles.countBadge, { minWidth: size * 0.36, height: size * 0.36, borderRadius: size * 0.18 }]}>
             <Text style={[styles.countLabel, { fontSize: size * 0.2 }]}>{count}</Text>
@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
   },
   avatarLighter: {
     position: 'absolute',
-    right: '-26%',
-    bottom: '-14%',
+    right: '-34%',
+    bottom: '-16%',
   },
   avatarLabel: {
     fontFamily: fonts.body,
@@ -779,10 +779,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bannerBurst: {
-    width: 92,
-    height: 130,
+    width: 118,
+    height: 123,
     marginVertical: -20,
-    marginRight: -10,
+    marginRight: -16,
   },
   bannerTag: {
     position: 'absolute',
