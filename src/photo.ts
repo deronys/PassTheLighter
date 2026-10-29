@@ -13,44 +13,36 @@ export type Photo = { uri: string; width: number; height: number };
 const dataUri = (r: { base64?: string; uri: string }) => (r.base64 ? `data:image/jpeg;base64,${r.base64}` : r.uri);
 
 // On the web the library's picker fires a synthetic click on a hidden input,
-// which phone browsers ignore, so "Add photo" did nothing on a phone. A real
-// click() on an input that is in the page, inside the tap, opens the gallery.
-function pickOnWeb(): Promise<{ uri: string; width: number; height: number } | undefined> {
+// which phone browsers can ignore. Instead, Settings puts a real (invisible)
+// file input right under the player's finger (see PhotoInput), and this reads
+// the chosen file. Shrinking happens on a canvas, which every phone browser has.
+export function photoFromFile(file: File): Promise<Photo> {
   return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.style.position = 'fixed';
-    input.style.left = '-1000px';
-    input.style.opacity = '0';
-    document.body.appendChild(input);
-    const done = () => input.remove();
-    input.addEventListener('cancel', () => {
-      done();
-      resolve(undefined);
-    });
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      done();
-      if (!file) return resolve(undefined);
-      const uri = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => resolve({ uri, width: img.naturalWidth, height: img.naturalHeight });
-      img.onerror = () => reject(new Error('Unreadable picture'));
-      img.src = uri;
-    });
-    input.click();
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, SOURCE_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const width = Math.max(1, Math.round(img.naturalWidth * scale));
+      const height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      resolve({ uri: canvas.toDataURL('image/jpeg', 0.8), width, height });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Unreadable picture'));
+    };
+    img.src = url;
   });
 }
 
+// Phones and tablets: the system photo library.
 export async function pickPhoto(): Promise<Photo | undefined> {
-  let picked: { uri: string; width: number; height: number } | undefined;
-  if (Platform.OS === 'web') {
-    picked = await pickOnWeb();
-  } else {
-    const result = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
-    picked = result.canceled ? undefined : result.assets[0];
-  }
+  const result = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+  const picked = result.canceled ? undefined : result.assets[0];
   if (!picked) return undefined;
   const { uri, width, height } = picked;
   const scale = Math.min(1, SOURCE_MAX / Math.max(width, height));
@@ -62,10 +54,26 @@ export async function pickPhoto(): Promise<Photo | undefined> {
 export type Crop = { originX: number; originY: number; width: number; height: number };
 
 export async function cropPhoto(source: string, crop: Crop): Promise<string> {
+  if (Platform.OS === 'web') return cropOnWeb(source, crop);
   const small = await manipulateAsync(source, [{ crop }, { resize: { width: SIZE, height: SIZE } }], {
     base64: true,
     compress: 0.75,
     format: SaveFormat.JPEG,
   });
   return dataUri(small);
+}
+
+function cropOnWeb(source: string, crop: Crop): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      canvas.getContext('2d')!.drawImage(img, crop.originX, crop.originY, crop.width, crop.height, 0, 0, SIZE, SIZE);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.onerror = () => reject(new Error('Unreadable picture'));
+    img.src = source;
+  });
 }

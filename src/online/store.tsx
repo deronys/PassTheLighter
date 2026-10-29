@@ -53,7 +53,8 @@ const Context = createContext<Store | null>(null);
 function upgrade(saved: Partial<DemoState>): DemoState {
   const base = newDemo();
   const empty = { chat: [], comments: [], reactions: [], categories: [], votes: {} };
-  return { ...base, ...saved, settings: { ...base.settings, ...saved.settings }, games: (saved.games ?? []).map((g) => ({ ...empty, ...g })) };
+  // The demo friends always come from the code, so new details (like photos) show up.
+  return { ...base, ...saved, friends: base.friends, settings: { ...base.settings, ...saved.settings }, games: (saved.games ?? []).map((g) => ({ ...empty, ...g })) };
 }
 
 const UNKNOWN: User = { id: '?', name: 'Someone', color: '#666666' };

@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
-import { pickPhoto } from '../photo';
+import { type Photo } from '../photo';
+import { PhotoInput } from '../ui/PhotoInput';
 import { firstName, playerStats } from '../online/demo';
 import { players, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
@@ -17,28 +18,29 @@ export function Settings() {
   const { state, me, setSettings, signOut, resetDemo, setPhoto } = useStore();
   const { settings } = state;
   const [photoError, setPhotoError] = useState(false);
-  const changePhoto = () => {
+  // Pick a picture, then choose the part that shows in your frame.
+  const picked = (photo: Photo) => {
     setPhotoError(false);
-    // Pick a picture, then choose the part that shows in your frame.
-    pickPhoto()
-      .then((picked) => picked && nav.push({ name: 'photo', source: picked.uri }))
-      .catch(() => setPhotoError(true));
+    nav.push({ name: 'photo', source: photo.uri });
   };
+  const failed = () => setPhotoError(true);
 
   return (
     <Screen title="SETTINGS" onBack={nav.back}>
       <Panel style={styles.profile}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Change profile picture" onPress={changePhoto}>
+        <PhotoInput accessibilityLabel="Change profile picture" onPicked={picked} onError={failed}>
           <Avatar user={me} size={84} />
           <View style={styles.camera}>
             <Text style={styles.cameraIcon}>📷</Text>
           </View>
-        </Pressable>
+        </PhotoInput>
         <View style={styles.grow}>
           <Text style={styles.name}>{me.name}</Text>
           <Text style={styles.small}>Signed in (demo)</Text>
           <View style={styles.photoButtons}>
-            <ComicButton label={me.photo ? 'CHANGE' : 'ADD PHOTO'} small color="yellow" onPress={changePhoto} />
+            <PhotoInput accessibilityLabel={me.photo ? 'Change photo' : 'Add photo'} onPicked={picked} onError={failed}>
+              <ComicButton label={me.photo ? 'CHANGE' : 'ADD PHOTO'} small color="yellow" onPress={() => undefined} />
+            </PhotoInput>
             {me.photo && state.photoSource && (
               <ComicButton label="ADJUST" small color="yellow" onPress={() => nav.push({ name: 'photo', source: state.photoSource! })} />
             )}

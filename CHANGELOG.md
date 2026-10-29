@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.15.1 - 2026-10-29
+
+- Bug fix: adding a profile photo from a phone's gallery. On the web, an invisible file input now sits right on the "Add photo" button and the avatar, so the tap goes straight to the phone's gallery. The picture is shrunk and cropped with the browser's own canvas instead of the image library.
+- Demo friends have cartoon portraits instead of initials (DiceBear "Avataaars" style by Pablo Stanley, free for personal and commercial use).
+
 ## v0.15.0 - 2026-10-29
 
 Changes from John's "Improvements New Version V7".

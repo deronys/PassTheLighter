@@ -3,6 +3,7 @@
 // Everything is plain data plus a `tick` that moves the bots, so it can be
 // tested and saved on the phone. A real server replaces this later.
 import { VOTE_CATEGORY_IDS } from '../data/awards.ts';
+import { DEMO_PHOTOS } from '../data/demoPhotos.ts';
 import { QUESTIONS } from '../data/questions.ts';
 import {
   type Game,
@@ -61,7 +62,7 @@ export const DEMO_FRIENDS: User[] = [
   'Leo Martin',
   'Sofia Ioannou',
   'Yannis Petrou',
-].map((name, i) => ({ id: `f${i + 1}`, name, color: COLORS[i % COLORS.length] }));
+].map((name, i) => ({ id: `f${i + 1}`, name, color: COLORS[i % COLORS.length], photo: DEMO_PHOTOS[`f${i + 1}`] }));
 
 export const firstName = (user: Pick<User, 'name'>) => user.name.split(' ')[0];
 
