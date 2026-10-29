@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { useNav } from '../nav';
 import { firstName, playerStats } from '../online/demo';
-import { type Game, MAX_PLAYERS, MIN_PLAYERS, canStart, players, receives, roleOf, visibleTo } from '../online/rules';
+import { type Game, LIGHTERS_TO_END, MAX_LIGHTERS_TO_END, MAX_PLAYERS, MIN_LIGHTERS_TO_END, MIN_PLAYERS, canStart, lightersToEnd, players, receives, roleOf, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
 import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts } from '../theme';
@@ -35,9 +35,32 @@ export function GameList() {
   const nav = useNav();
   const { state, me, user, now, remove } = useStore();
   const games = visibleTo(state.games, me.id);
+  // The game whose X was tapped, waiting for "are you sure?".
+  const [leaving, setLeaving] = useState<Game | null>(null);
+  const ends = !!leaving && leaving.hostId === me.id && leaving.status !== 'finished';
 
   return (
     <Screen title="GAME LIST" onBack={nav.back}>
+      <Modal visible={!!leaving} transparent animationType="fade" onRequestClose={() => setLeaving(null)}>
+        <View style={styles.modalBack}>
+          <Panel style={styles.modal}>
+            <Title size={26}>{ends ? 'END THIS GAME?' : 'LEAVE THIS GAME?'}</Title>
+            <Text style={styles.endingLabel}>
+              {ends
+                ? `Are you sure? You're the host, so "${leaving!.name}" ends for everyone.`
+                : `Are you sure you want to leave "${leaving?.name ?? ''}"? It will be removed from your list.`}
+            </Text>
+            <ComicButton
+              label={ends ? 'YES, END IT' : 'YES, LEAVE'}
+              onPress={() => {
+                remove(leaving!.id);
+                setLeaving(null);
+              }}
+            />
+            <ComicButton label="CANCEL" color="yellow" small onPress={() => setLeaving(null)} />
+          </Panel>
+        </View>
+      </Modal>
       <View style={styles.center}>
         <ComicButton label="CREATE GAME" sound={null} onPress={() => nav.push({ name: 'invite' })} style={styles.create} />
       </View>
@@ -89,7 +112,7 @@ export function GameList() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={game.hostId === me.id && game.status !== 'finished' ? `End ${game.name}` : `Remove ${game.name}`}
-                onPress={() => remove(game.id)}
+                onPress={() => setLeaving(game)}
                 hitSlop={8}
                 style={styles.remove}
               >
@@ -123,6 +146,7 @@ export function InviteFriends() {
   const [shown, setShown] = useState(8);
   const [picked, setPicked] = useState<string[]>([]);
   const [naming, setNaming] = useState(false);
+  const [ending, setEnding] = useState(LIGHTERS_TO_END);
   const [name, setName] = useState(GAME_NAMES[Math.floor(Math.random() * GAME_NAMES.length)]);
   const scroll = useRef<ScrollViewInstance>(null);
   const rows = useRef<Record<string, number>>({});
@@ -210,13 +234,29 @@ export function InviteFriends() {
           <Panel style={styles.modal}>
             <Title size={26}>NAME YOUR GAME</Title>
             <TextInput value={name} onChangeText={setName} style={styles.input} maxLength={24} autoFocus />
+            <Text style={styles.endingLabel}>The game ends when someone gets the lighter</Text>
+            <View style={styles.endingRow} accessibilityRole="radiogroup">
+              {Array.from({ length: MAX_LIGHTERS_TO_END - MIN_LIGHTERS_TO_END + 1 }, (_, i) => MIN_LIGHTERS_TO_END + i).map((n) => (
+                <Pressable
+                  key={n}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: ending === n }}
+                  accessibilityLabel={`${n} times`}
+                  onPress={() => setEnding(n)}
+                  style={[styles.endingChoice, ending === n && styles.endingChoiceOn]}
+                >
+                  <Text style={[styles.endingNumber, ending === n && styles.endingNumberOn]}>{n}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.endingLabel}>times. More times means a longer game.</Text>
             <ComicButton
               label="SEND INVITES"
               sound={null}
               disabled={!name.trim()}
               onPress={() => {
                 setNaming(false);
-                const id = create(name.trim(), picked);
+                const id = create(name.trim(), picked, ending);
                 nav.replace({ name: 'game', id });
               }}
             />
@@ -283,6 +323,7 @@ export function WaitingRoom({ game }: { game: Game }) {
             : `Waiting for ${firstName(user(game.hostId))} to start the game.`
           : `${accepted} of at least ${MIN_PLAYERS} players have accepted.`}
       </Text>
+      <Text style={styles.endingLabel}>🔥 The game ends when someone gets the lighter {lightersToEnd(game)} times.</Text>
       <View style={styles.seats}>
         {game.seats.map((seat) => {
           const s = SEAT_STATUS[seat.status];
@@ -413,6 +454,38 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 20,
     color: colors.title,
+  },
+  endingLabel: {
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  endingRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  endingChoice: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endingChoiceOn: {
+    borderColor: colors.green,
+    backgroundColor: 'rgba(110,220,70,0.25)',
+  },
+  endingNumber: {
+    fontFamily: fonts.comic,
+    fontSize: 24,
+    color: colors.white,
+  },
+  endingNumberOn: {
+    color: colors.green,
   },
   played: {
     fontFamily: fonts.bold,

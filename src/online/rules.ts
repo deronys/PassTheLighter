@@ -7,15 +7,19 @@
 // the holder was asked. The receiver sees the question asked to them, but not
 // the one they were the answer to; they can burn it (by watching an ad) to
 // find out why they got the lighter. The game ends when someone gets the
-// lighter for the third time: every question is revealed, players comment on
-// them and vote in 5 award categories, and the most voted player is champion.
+// lighter for the last time (3 times, or up to 6 if the host chose so): every
+// question is revealed, players comment on them and vote in 5 award
+// categories, and the most voted player is champion.
 
 import { VOTE_CATEGORY_IDS } from '../data/awards.ts';
 
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 12;
-// The game ends when someone gets the lighter this many times.
+// The game ends when someone gets the lighter this many times. The host can
+// pick anything from 3 to 6 when creating the game.
 export const LIGHTERS_TO_END = 3;
+export const MIN_LIGHTERS_TO_END = 3;
+export const MAX_LIGHTERS_TO_END = 6;
 // Award categories voted on at the end of each game.
 export const CATEGORIES_PER_GAME = 5;
 // How long invitations stay open in the waiting room.
@@ -107,6 +111,8 @@ export type Game = {
   categories: string[];
   // voter -> category -> who they voted for.
   votes: Record<string, Record<string, string>>;
+  // How many lighters end this game. Older saved games have none: they use 3.
+  lightersToEnd?: number;
 };
 
 // What a user sees when they open a game.
@@ -119,9 +125,12 @@ export type Role =
   | 'watcher' // 10a: everyone else
   | 'finished';
 
-export function createGame(id: string, name: string, host: string, invited: string[], now: number): Game {
+export function createGame(id: string, name: string, host: string, invited: string[], now: number, ending = LIGHTERS_TO_END): Game {
   const unique = [...new Set(invited.filter((u) => u !== host))];
   if (unique.length + 1 > MAX_PLAYERS) throw new Error(`At most ${MAX_PLAYERS} players`);
+  if (!Number.isInteger(ending) || ending < MIN_LIGHTERS_TO_END || ending > MAX_LIGHTERS_TO_END) {
+    throw new Error(`The game ends after ${MIN_LIGHTERS_TO_END} to ${MAX_LIGHTERS_TO_END} lighters`);
+  }
   return {
     id,
     name,
@@ -135,6 +144,7 @@ export function createGame(id: string, name: string, host: string, invited: stri
     burned: {},
     lastMoveAt: now,
     hiddenFor: [],
+    lightersToEnd: ending,
     chat: [],
     comments: [],
     reactions: [],
@@ -183,11 +193,17 @@ export function passAndAsk(game: Game, from: string, to: string, question: strin
   if (!text && !isFinalPass(game, to)) throw new Error('Write a question first');
   if (text.length > MAX_QUESTION) throw new Error('That question is too long');
   const next = { ...game, holder: to, passes: [...game.passes, { from, to, question: text, at: now }], lastMoveAt: now };
-  return receives(next)[to] >= LIGHTERS_TO_END ? finish(next, now) : next;
+  return receives(next)[to] >= lightersToEnd(game) ? finish(next, now) : next;
 }
 
 // Whether passing to this player gives them their last lighter and ends the game.
-export const isFinalPass = (game: Game, to: string) => (receives(game)[to] ?? 0) + 1 >= LIGHTERS_TO_END;
+export const isFinalPass = (game: Game, to: string) => (receives(game)[to] ?? 0) + 1 >= lightersToEnd(game);
+
+// How many lighters end this game.
+export const lightersToEnd = (game: Game) => game.lightersToEnd ?? LIGHTERS_TO_END;
+
+// 3 -> '3rd', 4 -> '4th': for "Claire's 4th lighter".
+export const ordinal = (n: number) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
 
 // Ends the game: every question is revealed and voting opens.
 function finish(game: Game, now: number): Game {
@@ -197,7 +213,7 @@ function finish(game: Game, now: number): Game {
 // Who got the lighter for the last time, if the game ended that way.
 export function lastHolder(game: Game): string | undefined {
   const last = lastPass(game);
-  return game.status === 'finished' && last && receives(game)[last.to] >= LIGHTERS_TO_END ? last.to : undefined;
+  return game.status === 'finished' && last && receives(game)[last.to] >= lightersToEnd(game) ? last.to : undefined;
 }
 
 // The same categories for every player in a game: a shuffle seeded by the game id.

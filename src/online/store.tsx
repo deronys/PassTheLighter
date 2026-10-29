@@ -28,7 +28,7 @@ type Store = {
   finishTutorial: () => void;
   setSettings: (settings: Settings) => void;
   resetDemo: () => void;
-  create: (name: string, invited: string[]) => string;
+  create: (name: string, invited: string[], lightersToEnd: number) => string;
   respond: (gameId: string, accept: boolean) => void;
   start: (gameId: string) => void;
   pass: (gameId: string, to: string, question: string) => void;
@@ -136,11 +136,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       finishTutorial: () => update((s) => ({ ...s, seenTutorial: true })),
       setSettings: (settings) => update((s) => ({ ...s, settings })),
       resetDemo: () => setState(newDemo()),
-      create: (name, invited) => {
+      create: (name, invited, lightersToEnd) => {
         const [id] = nextId(latest.current);
         update((s) => {
           const [gid, next] = nextId(s);
-          return { ...next, games: [createGame(gid, name, s.me!.id, invited, Date.now()), ...next.games] };
+          return { ...next, games: [createGame(gid, name, s.me!.id, invited, Date.now(), lightersToEnd), ...next.games] };
         });
         return id;
       },

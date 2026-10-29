@@ -8,7 +8,7 @@ import { type Deck, draw, newDeck } from '../deck';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, MAX_QUESTION, canSee, isFinalPass, lastPass, players, reasonIndex, receives, roleOf } from '../online/rules';
+import { type Game, MAX_QUESTION, canSee, isFinalPass, lastPass, lightersToEnd, players, reasonIndex, receives, roleOf } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
@@ -71,7 +71,7 @@ function HolderScreen({ game }: { game: Game }) {
   const counts = receives(game);
   const reason = last ? reasonIndex(game, game.passes.length - 1) : undefined;
   const target = others[selected];
-  // Their 3rd lighter ends the game, so there is no question to ask.
+  // Their last lighter ends the game, so there is no question to ask.
   const final = isFinalPass(game, target.id);
 
   // Two clear choices: look at the game so far, or pass the lighter on.
@@ -117,7 +117,7 @@ function HolderScreen({ game }: { game: Game }) {
       </View>
       {final && (
         <Text style={styles.finalHint}>
-          This is {firstName(target)}'s 3rd lighter: no question, the game ends and all secrets are revealed!
+          {firstName(target)} already has {lightersToEnd(game) - 1} lighters. If you pass it to {firstName(target)}, the game ends and all secrets are revealed!
         </Text>
       )}
     </Screen>

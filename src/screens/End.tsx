@@ -1,12 +1,12 @@
 // The end of a game: every secret revealed, comments, award votes and the champion.
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, MAX_COMMENT, MORE_REACTIONS, REACTIONS, everyoneVoted, lastHolder, players, results } from '../online/rules';
+import { type Game, MAX_COMMENT, MORE_REACTIONS, REACTIONS, everyoneVoted, lastHolder, lightersToEnd, players, results } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, ComicButton, Panel, PassBanner, Screen, Title, art } from '../ui/kit';
@@ -56,7 +56,7 @@ export function EndIntro({ game }: { game: Game }) {
         THE LIGHTER WENT OUT!
       </Title>
       <Text style={styles.introText}>
-        {ender ? `${name(ender)} got the lighter 3 times, so the game is over.` : 'The host ended the game.'} Now every secret comes out!
+        {ender ? `${name(ender)} got the lighter ${lightersToEnd(game)} times, so the game is over.` : 'The host ended the game.'} Now every secret comes out!
       </Text>
       <Panel style={styles.introSteps}>
         <IntroStep icon="🔍" text="See who passed the lighter to whom, and why" />
@@ -103,7 +103,7 @@ export function GameOver({ game }: { game: Game }) {
         <PassBanner left={<Avatar user={user(ender)} size={70} lighter />}>
           <Text style={styles.bannerName}>{name(ender)}</Text>
           <Title size={21} color={colors.white}>
-            GOT THE LIGHTER 3 TIMES!
+            GOT THE LIGHTER {lightersToEnd(game)} TIMES!
           </Title>
         </PassBanner>
       ) : (
@@ -118,7 +118,7 @@ export function GameOver({ game }: { game: Game }) {
       </Title>
       <Panel style={styles.tip}>
         <Text style={styles.tipText}>
-          Tap an emoji to react, or <Text style={styles.tipStrong}>💬 COMMENT</Text> to say what you think about each move!
+          Tap an emoji to react, or <Text style={styles.tipStrong}>💬</Text> to comment on each round!
         </Text>
       </Panel>
       {roundIndexes(game).map((i, k) => {
@@ -126,17 +126,17 @@ export function GameOver({ game }: { game: Game }) {
         return (
           <Panel key={i} style={styles.secret}>
             <Round game={game} index={i} n={k + 1} />
-            <Reactions game={game} index={i} n={k + 1} disabled={!isPlayer} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Comments on round ${k + 1}`}
-              onPress={() => nav.push({ name: 'comments', id: game.id, index: i })}
-              style={styles.commentButton}
-            >
-              <Text style={styles.commentButtonLabel}>
-                💬 {comments ? `${comments} ${comments === 1 ? 'COMMENT' : 'COMMENTS'}` : 'COMMENT'}
-              </Text>
-            </Pressable>
+            {/* Emoji and the comment button share one row. */}
+            <Reactions game={game} index={i} n={k + 1} disabled={!isPlayer}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Comments on round ${k + 1}`}
+                onPress={() => nav.push({ name: 'comments', id: game.id, index: i })}
+                style={styles.commentButton}
+              >
+                <Text style={styles.commentButtonLabel}>💬{comments ? ` ${comments}` : ''}</Text>
+              </Pressable>
+            </Reactions>
           </Panel>
         );
       })}
@@ -145,7 +145,7 @@ export function GameOver({ game }: { game: Game }) {
 }
 
 // The quick emoji, any extra ones players picked, and a + button for more.
-function Reactions({ game, index, n, disabled }: { game: Game; index: number; n: number; disabled: boolean }) {
+function Reactions({ game, index, n, disabled, children }: { game: Game; index: number; n: number; disabled: boolean; children?: ReactNode }) {
   const { me, react } = useStore();
   const [picking, setPicking] = useState(false);
   const used = game.reactions.filter((r) => r.passIndex === index);
@@ -179,6 +179,7 @@ function Reactions({ game, index, n, disabled }: { game: Game; index: number; n:
           <Text style={styles.reactionMoreLabel}>＋</Text>
         </Pressable>
       )}
+      {children}
       <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)}>
         <Pressable style={styles.pickerBack} onPress={() => setPicking(false)} accessibilityLabel="Close">
           <Panel style={styles.picker}>
@@ -261,7 +262,7 @@ export function Comments({ id, index }: { id: string; index: number }) {
       }
     >
       <Panel style={styles.secret}>
-        <Round game={g} index={index} n={roundIndexes(g).indexOf(index) + 1} size={56} />
+        <Round game={g} index={index} n={roundIndexes(g).indexOf(index) + 1} size={48} />
       </Panel>
       {list.length === 0 && <Text style={styles.hint}>No comments yet. Be the first!</Text>}
       {list.map((c, i) => (
@@ -539,15 +540,16 @@ const styles = StyleSheet.create({
   reactions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    alignItems: 'center',
+    gap: 5,
   },
   reaction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 16,
+    gap: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 2,
     borderColor: 'transparent',
@@ -557,7 +559,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,210,31,0.25)',
   },
   reactionEmoji: {
-    fontSize: 20,
+    fontSize: 15,
   },
   // The + button that opens the full emoji list.
   reactionMore: {
@@ -566,8 +568,8 @@ const styles = StyleSheet.create({
   },
   reactionMoreLabel: {
     fontFamily: fonts.bold,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 14,
+    lineHeight: 20,
     color: colors.yellow,
     paddingHorizontal: 4,
   },
@@ -598,21 +600,21 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 12,
     color: colors.white,
   },
   commentButton: {
-    alignSelf: 'flex-start',
     backgroundColor: colors.yellow,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    minHeight: 28,
+    justifyContent: 'center',
   },
   commentButtonLabel: {
-    fontFamily: fonts.comic,
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: 14,
     color: colors.ink,
-    marginTop: 2,
   },
   commentRow: {
     flexDirection: 'row',

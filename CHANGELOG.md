@@ -2,6 +2,17 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.13.0 - 2026-10-29
+
+Changes from John's "Improvements New Version V6", plus the How to play change from V5.
+
+- History and reveal: the question box sits next to the two players' names instead of under them.
+- Smaller emoji reactions, on one row with the 💬 comment button.
+- Tapping X on a game in the game list asks "Are you sure?" first. For the host of a running game it warns that the game ends for everyone.
+- When the player you're about to pass to is one lighter away from the end, the message says so: "Dimitris already has 2 lighters. If you pass it to Dimitris, the game ends and all secrets are revealed!"
+- The host picks how many lighters end the game (3 to 6) when creating it. The waiting room shows the choice, and every "3 times" or "3rd lighter" text follows it.
+- How to play no longer has the "Burn the question" page (from V5).
+
 ## v0.12.0 - 2026-10-20
 
 Changes from John's "Improvements New Version V4". The demo starts over with fresh test games (older saves are deleted).

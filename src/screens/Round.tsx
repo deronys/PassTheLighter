@@ -6,10 +6,10 @@ import Svg, { Polygon } from 'react-native-svg';
 
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, canSee, lastHolder } from '../online/rules';
+import { type Game, canSee, lastHolder, lightersToEnd, ordinal } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, BubbleText, HiddenTicket, LighterIcon, QuestionCoin, SpeechBubble } from '../ui/kit';
+import { Avatar, HiddenTicket, LighterIcon, QuestionCoin } from '../ui/kit';
 
 // The passes that carried a question, oldest first. Each one is a round; the
 // final pass has no question, it only answers the round before it.
@@ -21,7 +21,7 @@ export function runningCounts(game: Game): number[] {
   return game.passes.map((p) => (seen[p.to] = (seen[p.to] ?? 0) + 1));
 }
 
-export function Round({ game, index, n, size = 48, counts }: { game: Game; index: number; n: number; size?: number; counts?: number[] }) {
+export function Round({ game, index, n, size = 44, counts }: { game: Game; index: number; n: number; size?: number; counts?: number[] }) {
   const nav = useNav();
   const { me, user } = useStore();
   const name = (id: string) => (id === me.id ? 'You' : firstName(user(id)));
@@ -44,18 +44,21 @@ export function Round({ game, index, n, size = 48, counts }: { game: Game; index
       <View style={styles.pair}>
         <Avatar user={user(asked.from)} size={size} label={name(asked.from)} />
         <View style={styles.arrow} accessibilityLabel="asked">
-          <QuestionCoin size={26} />
+          <QuestionCoin size={22} />
           <Arrow />
         </View>
         <Avatar user={user(asked.to)} size={size} count={counts?.[index]} label={name(asked.to)} />
+        {/* The question sits next to the two players, not under them. */}
+        <View style={styles.question}>
+          {seen ? (
+            <View style={styles.bubble}>
+              <Text style={styles.bubbleText}>{asked.question}</Text>
+            </View>
+          ) : (
+            <HiddenTicket small onPress={() => nav.push({ name: 'burn', id: game.id, index })} />
+          )}
+        </View>
       </View>
-      {seen ? (
-        <SpeechBubble tail="top">
-          <BubbleText>{asked.question}</BubbleText>
-        </SpeechBubble>
-      ) : (
-        <HiddenTicket small onPress={() => nav.push({ name: 'burn', id: game.id, index })} />
-      )}
       {answer ? (
         <>
           <Text style={styles.caption}>
@@ -69,7 +72,7 @@ export function Round({ game, index, n, size = 48, counts }: { game: Game; index
             </View>
             <Avatar user={user(answer.to)} size={size} count={counts?.[index + 1]} label={name(answer.to)} />
           </View>
-          {final && <FinalPass name={name(answer.to)} />}
+          {final && <FinalPass name={name(answer.to)} n={lightersToEnd(game)} />}
         </>
       ) : (
         <Text style={styles.waiting}>
@@ -85,10 +88,12 @@ export function Round({ game, index, n, size = 48, counts }: { game: Game; index
 }
 
 // The last pass: no question, it just ends the game.
-export function FinalPass({ name }: { name: string }) {
+export function FinalPass({ name, n }: { name: string; n: number }) {
   return (
     <View style={styles.final}>
-      <Text style={styles.finalText}>🔥 {name === 'You' ? 'Your' : `${name}'s`} 3rd lighter. Game over!</Text>
+      <Text style={styles.finalText}>
+        🔥 {name === 'You' ? 'Your' : `${name}'s`} {ordinal(n)} lighter. Game over!
+      </Text>
     </View>
   );
 }
@@ -137,7 +142,23 @@ const styles = StyleSheet.create({
   pair: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+  },
+  question: {
+    flex: 1,
+    minWidth: 0,
+  },
+  bubble: {
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  bubbleText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.bubbleText,
   },
   arrow: {
     alignItems: 'center',

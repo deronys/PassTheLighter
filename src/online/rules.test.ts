@@ -208,3 +208,21 @@ test('profiles count finished games, champions and awards', () => {
   assert.equal(playerStats(state, friend).games, before.games + 1);
   assert.ok(before.games >= 4);
 });
+
+test('the host can pick how many lighters end the game, from 3 to 6', () => {
+  assert.throws(() => createGame('g', 'Test', 'a', ['b', 'c', 'd'], 0, 2));
+  assert.throws(() => createGame('g', 'Test', 'a', ['b', 'c', 'd'], 0, 7));
+  let g = createGame('g', 'Test', 'a', ['b', 'c', 'd'], 0, 4);
+  for (const u of ['b', 'c', 'd']) g = respond(g, u, true, 1);
+  g = startGame(g, 'a', 2);
+  // a holds 1 (the start); a needs 3 more to reach 4.
+  for (const [from, to] of [['a', 'b'], ['b', 'a'], ['a', 'b'], ['b', 'a'], ['a', 'b']]) {
+    if (to === 'a' && (receives(g).a ?? 0) + 1 === 4) assert.ok(isFinalPass(g, 'a'));
+    g = passAndAsk(g, from, to, 'Q', 3);
+  }
+  assert.equal(g.status, 'active');
+  assert.equal(receives(g).a, 3);
+  g = passAndAsk(g, 'b', 'a', '', 4);
+  assert.equal(g.status, 'finished');
+  assert.equal(lastHolder(g), 'a');
+});
