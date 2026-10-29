@@ -7,6 +7,7 @@ import { useNav } from '../nav';
 import { firstName, playerStats } from '../online/demo';
 import { type Game, LIGHTERS_TO_END, MAX_LIGHTERS_TO_END, MAX_PLAYERS, MIN_LIGHTERS_TO_END, MIN_PLAYERS, canStart, lightersToEnd, players, receives, roleOf, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
+import { BotMoveButton } from './DevBot';
 import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, ComicButton, Panel, Screen, Title } from '../ui/kit';
@@ -107,6 +108,7 @@ export function GameList() {
                     Game status: <Text style={{ color: status.color }}>{status.label}</Text>
                   </Text>
                 </View>
+                <BotMoveButton game={game} compact />
               </View>
               {hostOnRight && hostBlock}
               <Pressable

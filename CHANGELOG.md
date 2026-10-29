@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.14.0 - 2026-10-29
+
+- Test mode for development: "Bots wait for me" in Settings (on by default). A bot with the lighter only passes it when you tap "🤖 Make … play". The button shows on its game in the game list, in Game Progress and on the game status screens. Chat, comments, reactions and votes stay automatic. Turn it off to have bots play on their own after 10 seconds again.
+- The demo starts over with fresh test games (older saves are deleted).
+
 ## v0.13.0 - 2026-10-29
 
 Changes from John's "Improvements New Version V6", plus the How to play change from V5.

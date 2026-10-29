@@ -8,6 +8,7 @@ import { useNav } from '../nav';
 import { firstName } from '../online/demo';
 import { type Game, canSee } from '../online/rules';
 import { useStore } from '../online/store';
+import { BotMoveButton } from './DevBot';
 import { useGameBar } from './gameBar';
 import { Round, roundIndexes, runningCounts } from './Round';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
@@ -199,6 +200,7 @@ export function GameProgress({ id }: { id: string }) {
           </Title>
         </PassBanner>
       )}
+      <BotMoveButton game={g} />
       {rounds.length === 0 && <Text style={styles.hint}>No questions yet.</Text>}
       {rounds.map(({ i, n }) => (
         <Panel key={i}>

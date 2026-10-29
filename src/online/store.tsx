@@ -5,13 +5,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { setMuted } from '../feedback';
-import { type DemoState, type Settings, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
+import { type DemoState, type Settings, botHolds, botPass, firstName, newDemo, newlyPassedToYou, nextId, signIn, tick } from './demo';
 import { type Game, type User, addComment, toggleReaction, burn, castVotes, createGame, passAndAsk, removeFor, respond, sendChat, startGame } from './rules';
 
-// A new key starts everyone's demo over: v2 in v0.10.0, v3 in v0.12.0 (John
-// asked for fresh test data both times). Older saves are deleted.
-const KEY = 'ptl.demo.v3';
-const OLD_KEYS = ['ptl.demo.v1', 'ptl.demo.v2'];
+// A new key starts everyone's demo over: v2 in v0.10.0, v3 in v0.12.0, v4 in
+// v0.14.0 (John asked for fresh test data each time). Older saves are deleted.
+const KEY = 'ptl.demo.v4';
+const OLD_KEYS = ['ptl.demo.v1', 'ptl.demo.v2', 'ptl.demo.v3'];
 
 type Store = {
   ready: boolean;
@@ -43,6 +43,8 @@ type Store = {
   setPhoto: (photo: string | undefined, source?: string) => void;
   react: (gameId: string, passIndex: number, emoji: string) => void;
   seeEnd: (gameId: string) => void;
+  // Development: the bot holding the lighter makes their move now.
+  botMove: (gameId: string) => void;
 };
 
 const Context = createContext<Store | null>(null);
@@ -51,7 +53,7 @@ const Context = createContext<Store | null>(null);
 function upgrade(saved: Partial<DemoState>): DemoState {
   const base = newDemo();
   const empty = { chat: [], comments: [], reactions: [], categories: [], votes: {} };
-  return { ...base, ...saved, games: (saved.games ?? []).map((g) => ({ ...empty, ...g })) };
+  return { ...base, ...saved, settings: { ...base.settings, ...saved.settings }, games: (saved.games ?? []).map((g) => ({ ...empty, ...g })) };
 }
 
 const UNKNOWN: User = { id: '?', name: 'Someone', color: '#666666' };
@@ -160,6 +162,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setPhoto: (photo, source) =>
         update((s) => (s.me ? { ...s, me: { ...s.me, photo }, photoSource: photo ? (source ?? s.photoSource) : undefined } : s)),
       react: (id, index, emoji) => onGame(id, (g, u) => toggleReaction(g, u, index, emoji)),
+      botMove: (id) => update((s) => ({ ...s, games: s.games.map((g) => (g.id === id && botHolds(s, g) ? botPass(g, Date.now()) : g)) })),
       seeEnd: (id) => update((s) => (s.endSeen[id] ? s : { ...s, endSeen: { ...s.endSeen, [id]: true } })),
     };
   }, [state, ready, now, toast]);

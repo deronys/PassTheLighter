@@ -55,6 +55,12 @@ export function Settings() {
         <Toggle label="SOUND" on={settings.sound} onChange={(sound) => setSettings({ ...settings, sound })} />
         <Toggle label="NOTIFICATIONS" on={settings.notifications} onChange={(notifications) => setSettings({ ...settings, notifications })} />
       </Panel>
+      <Panel style={styles.list}>
+        <Toggle label="BOTS WAIT FOR ME" on={settings.manualBots} onChange={(manualBots) => setSettings({ ...settings, manualBots })} />
+        <Text style={styles.small}>
+          Test mode. When on, a bot with the lighter only passes it when you tap "Make them play" on its game. Chat, comments and votes stay automatic.
+        </Text>
+      </Panel>
       <View style={styles.buttons}>
         <ComicButton label="MY PROFILE" color="yellow" onPress={() => nav.push({ name: 'profile', id: me.id })} />
         <ComicButton label="HOW TO PLAY" color="yellow" onPress={() => nav.push({ name: 'tutorial', fromMenu: true })} />

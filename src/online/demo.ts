@@ -23,7 +23,9 @@ import {
   MORE_REACTIONS,
 } from './rules.ts';
 
-export type Settings = { sound: boolean; notifications: boolean };
+// manualBots is for development: bots only pass the lighter when you tap
+// their "make them play" button, so you can look at each screen calmly.
+export type Settings = { sound: boolean; notifications: boolean; manualBots: boolean };
 
 export type DemoState = {
   me: User | null;
@@ -82,7 +84,7 @@ const BOT_MOVE_MS = 10_000;
 const movesAt = (g: Game) => g.lastMoveAt + BOT_MOVE_MS;
 
 export function newDemo(): DemoState {
-  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true }, chatSeen: {}, endSeen: {} };
+  return { me: null, friends: DEMO_FRIENDS, games: [], seq: 1, seenTutorial: false, settings: { sound: true, notifications: true, manualBots: true }, chatSeen: {}, endSeen: {} };
 }
 
 // Signing in creates your profile and a few games so the demo isn't empty.
@@ -165,18 +167,24 @@ export function tick(state: DemoState, now: number): DemoState {
         g = { ...g, status: 'finished' };
       }
     }
-    if (g.status === 'active' && g.holder && isBot(state, g.holder) && now >= movesAt(g)) {
-      const key = `${g.id}:${g.passes.length}`;
-      const others = players(g).filter((p) => p !== g.holder);
-      const to = others[Math.floor(chance(`${key}:to`) * others.length)];
-      g = passAndAsk(g, g.holder, to, QUESTIONS[Math.floor(chance(`${key}:q`) * QUESTIONS.length)], now);
-    }
+    if (botHolds(state, g) && !state.settings.manualBots && now >= movesAt(g)) g = botPass(g, now);
     g = botChat(state, g, now);
     if (g.status === 'finished' && g.endedAt) g = botWrapUp(g, state, now);
     if (g !== game) changed = true;
     return g;
   });
   return changed ? { ...state, games } : state;
+}
+
+// Whether a bot has the lighter in this game, so it is their move.
+export const botHolds = (state: DemoState, g: Game) => g.status === 'active' && !!g.holder && isBot(state, g.holder);
+
+// The bot holding the lighter passes it on, with a question from the deck.
+export function botPass(g: Game, now: number): Game {
+  const key = `${g.id}:${g.passes.length}`;
+  const others = players(g).filter((p) => p !== g.holder);
+  const to = others[Math.floor(chance(`${key}:to`) * others.length)];
+  return passAndAsk(g, g.holder!, to, QUESTIONS[Math.floor(chance(`${key}:q`) * QUESTIONS.length)], now);
 }
 
 const CHAT_LINES = ['😂😂😂', 'No way!', 'I knew it 👀', 'Who asked that??', 'Hurry up with the lighter 🔥', "I'm not saying anything 🤐", 'This game is getting spicy 🌶️', 'Ok who wrote that question 😅'];

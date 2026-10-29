@@ -16,6 +16,7 @@ import { QuestionDeck } from '../ui/QuestionDeck';
 import { Avatar, BubbleText, ComicButton, HiddenTicket, PassBanner, QuestionCoin, Screen, SpeechBubble, Tag, Title } from '../ui/kit';
 import { WaitingRoom } from './Lobby';
 import { GameOver } from './End';
+import { BotMoveButton } from './DevBot';
 import { useGameBar } from './gameBar';
 
 // Picks the screen for a game from where you stand in it.
@@ -210,6 +211,7 @@ function PlayerStatus({ game }: { game: Game }) {
       footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
     >
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <BotMoveButton game={game} />
       <PassBanner left={<Avatar user={me} size={70} label="You" />} right={<Avatar user={to} size={70} lighter label={firstName(to)} />}>
         <BannerText line="YOU PASSED THE LIGHTER TO" size={20} />
       </PassBanner>
@@ -268,6 +270,7 @@ function GameStatus({ game }: { game: Game }) {
         </PassBanner>
       )}
       <Text style={styles.hint}>Waiting for {firstName(user(game.holder!))} to pass the lighter.</Text>
+      <BotMoveButton game={game} />
     </Screen>
   );
 }

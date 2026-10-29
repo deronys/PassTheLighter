@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { newDemo, newlyPassedToYou, playerStats, signIn, tick } from './demo.ts';
+import { botHolds, botPass, newDemo, newlyPassedToYou, playerStats, signIn, tick } from './demo.ts';
 import {
   INVITE_WINDOW_MS,
   addComment,
@@ -96,7 +96,8 @@ test('the host removing a game ends it; others only hide it', () => {
 
 test('the demo seeds games and the bots play on their own', () => {
   const now = 1_000_000_000;
-  const state = signIn(newDemo(), 'John', now);
+  const auto = newDemo();
+  const state = signIn({ ...auto, settings: { ...auto.settings, manualBots: false } }, 'John', now);
   const friday = state.games.find((g) => g.name === 'Friday Quizzz')!;
   assert.equal(roleOf(friday, 'me'), 'holder');
   assert.equal(roleOf(state.games.find((g) => g.name === 'Dirty Secrets')!, 'me'), 'invited');
@@ -104,7 +105,8 @@ test('the demo seeds games and the bots play on their own', () => {
   let later = state;
   for (let t = now; t <= now + 120_000; t += 1000) later = tick(later, t);
   const late = later.games.find((g) => g.name === 'Late Night Truths')!;
-  assert.ok(late.passes.length >= 4 || late.holder !== null);
+  const before = state.games.find((g) => g.name === 'Late Night Truths')!;
+  assert.ok(late.passes.length > before.passes.length);
   // Bots never move a game you hold.
   assert.equal(later.games.find((g) => g.name === 'Friday Quizzz')!.passes.length, friday.passes.length);
   assert.ok(Array.isArray(newlyPassedToYou(state, later)));
@@ -225,4 +227,19 @@ test('the host can pick how many lighters end the game, from 3 to 6', () => {
   g = passAndAsk(g, 'b', 'a', '', 4);
   assert.equal(g.status, 'finished');
   assert.equal(lastHolder(g), 'a');
+});
+
+test('with manual bots, a bot only passes when you tap for it', () => {
+  const now = 1_000_000_000;
+  const state = signIn(newDemo(), 'John', now);
+  assert.ok(state.settings.manualBots);
+  const id = state.games.find((g) => g.name === 'Late Night Truths')!.id;
+  let later = state;
+  for (let t = now; t <= now + 120_000; t += 1000) later = tick(later, t);
+  const waited = later.games.find((g) => g.id === id)!;
+  assert.equal(waited.passes.length, state.games.find((g) => g.id === id)!.passes.length);
+  assert.ok(botHolds(later, waited));
+  const moved = botPass(waited, now + 121_000);
+  assert.equal(moved.passes.length, waited.passes.length + 1);
+  assert.notEqual(moved.holder, waited.holder);
 });
