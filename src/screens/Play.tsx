@@ -1,6 +1,6 @@
 // 08 Pass the lighter, 10 You got it, 09 Ask a question, 10a Game status,
 // 10b Player status and the finished game.
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { QUESTIONS } from '../data/questions';
@@ -128,11 +128,13 @@ function HolderScreen({ game }: { game: Game }) {
 // 09: write the question for the friend you picked, or use a suggested one.
 // The Ask button sits right under the question, not pinned to the bottom, so a
 // phone keyboard never pushes it over the text box.
+// One deck for the whole session, so an idea only comes back after every
+// question has been shown.
 let suggestionDeck: Deck = newDeck(QUESTIONS.length);
-const SUGGESTIONS_PER_HAND = 5;
+const FIRST_IDEAS = 3;
 
-function dealSuggestions(): number[] {
-  const result = draw(suggestionDeck, SUGGESTIONS_PER_HAND, QUESTIONS.length);
+function drawIdeas(count: number): number[] {
+  const result = draw(suggestionDeck, count, QUESTIONS.length);
   suggestionDeck = result.deck;
   return result.picks;
 }
@@ -142,7 +144,8 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
   const { game, me, user, pass } = useStore();
   const bar = useGameBar(game(id));
   const [question, setQuestion] = useState('');
-  const [cards, setCards] = useState(dealSuggestions);
+  const [cards, setCards] = useState(() => drawIdeas(FIRST_IDEAS));
+  const more = useCallback(() => setCards((c) => [...c, ...drawIdeas(1)]), []);
   const target = user(to);
   const g = game(id);
   if (!g) return <Gone />;
@@ -188,7 +191,7 @@ export function AskQuestion({ id, to }: { id: string; to: string }) {
         <Title size={22} style={styles.section}>
           NEED AN IDEA?
         </Title>
-        <QuestionDeck cards={cards} onDeal={() => setCards(dealSuggestions())} onUse={(i) => setQuestion(QUESTIONS[i])} />
+        <QuestionDeck cards={cards} onMore={more} onUse={(i) => setQuestion(QUESTIONS[i])} />
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -203,13 +206,7 @@ function PlayerStatus({ game }: { game: Game }) {
   const to = user(last.to);
 
   return (
-    <Screen
-      {...bar}
-      title="GAME STATUS"
-      onBack={nav.back}
-     
-      footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
-    >
+    <Screen {...bar} title="GAME STATUS" onBack={nav.back}>
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
       <BotMoveButton game={game} />
       <PassBanner left={<Avatar user={me} size={70} label="You" />} right={<Avatar user={to} size={70} lighter label={firstName(to)} />}>
@@ -237,13 +234,7 @@ function GameStatus({ game }: { game: Game }) {
   const last = game.passes[index];
 
   return (
-    <Screen
-      {...bar}
-      title="GAME STATUS"
-      onBack={nav.back}
-     
-      footer={<ComicButton label="HISTORY" color="yellow" onPress={() => nav.push({ name: 'progress', id: game.id })} />}
-    >
+    <Screen {...bar} title="GAME STATUS" onBack={nav.back}>
       <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
       {last ? (
         <>
@@ -261,7 +252,7 @@ function GameStatus({ game }: { game: Game }) {
               <BubbleText>{last.question}</BubbleText>
             </SpeechBubble>
           ) : (
-            <HiddenTicket onPress={() => nav.push({ name: 'burn', id: game.id, index })} />
+            <HiddenTicket />
           )}
         </>
       ) : (
@@ -271,6 +262,9 @@ function GameStatus({ game }: { game: Game }) {
       )}
       <Text style={styles.hint}>Waiting for {firstName(user(game.holder!))} to pass the lighter.</Text>
       <BotMoveButton game={game} />
+      <View style={styles.center}>
+        <ComicButton label="CHECK GAME STATUS" onPress={() => nav.push({ name: 'progress', id: game.id })} style={styles.takeBack} />
+      </View>
     </Screen>
   );
 }

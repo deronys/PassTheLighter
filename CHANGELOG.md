@@ -2,6 +2,15 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.15.0 - 2026-10-29
+
+Changes from John's "Improvements New Version V7".
+
+- Question ideas: no more "Use it" and "New cards" buttons. Swipe (or tap the arrows) for a new idea, endlessly: every question shows once before any comes back. Double-tap the card to use it. A note under the card says so.
+- Game status screens: the History button at the bottom is gone. "Check game status" opens the game's history.
+- Bug fix: "Add photo" did nothing on a phone. The picker now opens the gallery with a real tap on phone browsers.
+- Bug fix: you can only burn the question that got you the lighter. Other players' hidden questions stay hidden until the end.
+
 ## v0.14.0 - 2026-10-29
 
 - Test mode for development: "Bots wait for me" in Settings (on by default). A bot with the lighter only passes it when you tap "🤖 Make … play". The button shows on its game in the game list, in Game Progress and on the game status screens. Chat, comments, reactions and votes stay automatic. Turn it off to have bots play on their own after 10 seconds again.

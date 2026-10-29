@@ -257,9 +257,17 @@ export function reasonIndex(game: Game, passIndex: number): number | undefined {
   return passIndex >= 1 ? passIndex - 1 : undefined;
 }
 
+// You can only burn a question that got you the lighter: the one asked to the
+// player who then passed it to you. Other players' secrets stay hidden until
+// the end.
+export function canBurn(game: Game, passIndex: number, user: string): boolean {
+  return !!game.passes[passIndex] && game.passes[passIndex + 1]?.to === user && !canSee(game, passIndex, user);
+}
+
 export function burn(game: Game, passIndex: number, user: string): Game {
   if (!game.passes[passIndex]) throw new Error('No such question');
   if (canSee(game, passIndex, user)) return game;
+  if (!canBurn(game, passIndex, user)) throw new Error('You can only burn the question that got you the lighter');
   return { ...game, burned: { ...game.burned, [user]: [...(game.burned[user] ?? []), passIndex] } };
 }
 

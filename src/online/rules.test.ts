@@ -14,6 +14,7 @@ import {
   sendChat,
   toggleReaction,
   burn,
+  canBurn,
   canSee,
   canStart,
   createGame,
@@ -81,6 +82,10 @@ test('the receiver sees their question but not the one they answer; burning reve
   assert.ok(!canSee(g, 0, 'c'));
   assert.ok(canSee(g, 0, 'a') && canSee(g, 0, 'b'));
   assert.ok(!canSee(g, 1, 'd'));
+  // Only the question that got you the lighter can be burned.
+  assert.ok(canBurn(g, 0, 'c'));
+  assert.ok(!canBurn(g, 0, 'd'));
+  assert.throws(() => burn(g, 0, 'd'));
   g = burn(g, 0, 'c');
   assert.ok(canSee(g, 0, 'c'));
   assert.ok(!canSee(g, 0, 'd'));

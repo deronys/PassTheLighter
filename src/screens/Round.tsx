@@ -6,7 +6,7 @@ import Svg, { Polygon } from 'react-native-svg';
 
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, canSee, lastHolder, lightersToEnd, ordinal } from '../online/rules';
+import { type Game, canBurn, canSee, lastHolder, lightersToEnd, ordinal } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, HiddenTicket, LighterIcon, QuestionCoin } from '../ui/kit';
@@ -55,7 +55,7 @@ export function Round({ game, index, n, size = 44, counts }: { game: Game; index
               <Text style={styles.bubbleText}>{asked.question}</Text>
             </View>
           ) : (
-            <HiddenTicket small onPress={() => nav.push({ name: 'burn', id: game.id, index })} />
+            <HiddenTicket small onPress={canBurn(game, index, me.id) ? () => nav.push({ name: 'burn', id: game.id, index }) : undefined} />
           )}
         </View>
       </View>

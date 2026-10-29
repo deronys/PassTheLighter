@@ -16,21 +16,24 @@ import Svg, { Path } from 'react-native-svg';
 import { QUESTIONS, categoryOf } from '../data/questions';
 import { play } from '../feedback';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
-import { ComicButton } from './kit';
 
 type Props = {
-  // Question indexes dealt for this turn.
+  // Question indexes drawn so far this turn. The list grows as the player swipes.
   cards: number[];
-  onDeal: () => void;
-  // Called with the top card's question index when the player picks it.
+  // Draw one more card; called before the player runs out of cards ahead.
+  onMore: () => void;
+  // Called with the top card's question index when the player double-taps it.
   onUse: (questionIndex: number) => void;
 };
 
 const SWIPE_DISTANCE = 70;
 
-// Suggested questions, as a hand of idea cards (brought back from v0.7.0 in the new look). Swipe or use the arrows to flip through them, and tap
-// the top card (or "Use this one") to copy its question into your own.
-export function QuestionDeck({ cards, onDeal, onUse }: Props) {
+const DOUBLE_TAP_MS = 350;
+
+// Suggested questions as a stack of idea cards. Swipe (or use the arrows) for
+// a new idea, endlessly: the deck shows every question once before any comes
+// back. Double-tap the top card to copy its question into your own.
+export function QuestionDeck({ cards, onMore, onUse }: Props) {
   const { width } = useWindowDimensions();
   const cardWidth = Math.min(280, width - 96);
   const cardHeight = cardWidth * 0.62;
@@ -40,29 +43,43 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
   const dx = useRef(new Animated.Value(0)).current;
   const deal = useRef(new Animated.Value(0)).current;
 
-  // A new hand: reset to the first card and deal the cards in.
+  // Deal the cards in once, when the deck appears.
   useEffect(() => {
-    setTop(0);
-    deal.setValue(0);
     Animated.timing(deal, { toValue: 1, duration: 650, easing: Easing.out(Easing.back(1.4)), useNativeDriver: nativeDriver }).start();
-  }, [cards, deal]);
+  }, [deal]);
+
+  // Keep two cards waiting behind the top one.
+  useEffect(() => {
+    if (top + 2 >= cards.length) onMore();
+  }, [top, cards.length, onMore]);
 
   // Ignore taps while a card is still flying off, so no flip gets lost.
   const flying = useRef(false);
   const flip = (direction: 1 | -1) => {
     if (flying.current) return;
+    // Back stops at the first idea; forward never runs out.
+    if (direction < 0 && top === 0) {
+      Animated.spring(dx, { toValue: 0, useNativeDriver: nativeDriver }).start();
+      return;
+    }
     flying.current = true;
     play('tap');
     Animated.timing(dx, { toValue: direction * -(width + 40), duration: 180, useNativeDriver: nativeDriver }).start(() => {
       dx.setValue(0);
-      setTop((t) => (t + direction + count) % count);
+      setTop((t) => Math.max(0, t + direction));
       flying.current = false;
     });
   };
-  const use = () => {
-    if (cards.length === 0) return;
-    play('pop');
-    onUse(cards[top]);
+  const lastTap = useRef(0);
+  const tap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < DOUBLE_TAP_MS && cards[top] !== undefined) {
+      lastTap.current = 0;
+      play('pop');
+      onUse(cards[top]);
+    } else {
+      lastTap.current = now;
+    }
   };
 
   const flipRef = useRef(flip);
@@ -88,7 +105,7 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
   const rotate = dx.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-12deg', '0deg', '12deg'] });
 
   // The top card plus two peeking out behind it, drawn back to front.
-  const layers = [2, 1, 0].filter((depth) => depth < count).map((depth) => (top + depth) % count);
+  const layers = [2, 1, 0].filter((depth) => top + depth < count).map((depth) => top + depth);
 
   return (
     <View style={styles.wrap}>
@@ -114,9 +131,9 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
             >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={isTop ? `Use this question: ${QUESTIONS[cards[position] ?? 0]}` : undefined}
+                accessibilityLabel={isTop ? `Double-tap to use this question: ${QUESTIONS[cards[position] ?? 0]}` : undefined}
                 disabled={!isTop}
-                onPress={use}
+                onPress={tap}
                 style={styles.fill}
               >
               <LinearGradient colors={category.colors} style={styles.cardFace}>
@@ -136,18 +153,9 @@ export function QuestionDeck({ cards, onDeal, onUse }: Props) {
       </View>
 
       <View style={styles.controls}>
-        <RoundButton dir={-1} accessibilityLabel="Previous card" onPress={() => flip(-1)} />
-        <View style={styles.dots}>
-          {Array.from({ length: count }, (_, i) => (
-            <View key={i} style={[styles.dot, i === top && styles.dotActive]} />
-          ))}
-        </View>
-        <RoundButton dir={1} accessibilityLabel="Next card" onPress={() => flip(1)} />
-      </View>
-
-      <View style={[styles.controls, styles.stretch]}>
-        <ComicButton label="USE IT" small color="yellow" sound="pop" onPress={() => onUse(cards[top])} style={styles.grow} />
-        <ComicButton label="NEW CARDS" small sound={null} onPress={onDeal} style={styles.grow} />
+        <RoundButton dir={-1} accessibilityLabel="Previous idea" onPress={() => flip(-1)} />
+        <Text style={styles.note}>Double-tap to use it{'\n'}Swipe for a new idea</Text>
+        <RoundButton dir={1} accessibilityLabel="Next idea" onPress={() => flip(1)} />
       </View>
     </View>
   );
@@ -230,24 +238,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
-  dots: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
-  dotActive: {
-    width: 22,
-    backgroundColor: colors.yellow,
-  },
-  grow: {
-    flex: 1,
-  },
-  stretch: {
-    alignSelf: 'stretch',
+  note: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    lineHeight: 19,
+    color: colors.white,
+    textAlign: 'center',
   },
 });
