@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.15.2 - 2026-10-29
+
+- Settings has an AVATAR button: pick one of 18 ready-made cartoon portraits as your profile picture. It works where the phone's gallery can't be opened, such as the viewer inside the Claude app.
+- Choosing an avatar or removing the photo forgets the old gallery picture, so ADJUST only shows for gallery photos.
+
 ## v0.15.1 - 2026-10-29
 
 - Bug fix: adding a profile photo from a phone's gallery. On the web, an invisible file input now sits right on the "Add photo" button and the avatar, so the tap goes straight to the phone's gallery. The picture is shrunk and cropped with the browser's own canvas instead of the image library.

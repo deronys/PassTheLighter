@@ -1,7 +1,8 @@
 // 14 Settings and 15 Friends.
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AVATAR_CHOICES } from '../data/avatarChoices';
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
@@ -18,6 +19,7 @@ export function Settings() {
   const { state, me, setSettings, signOut, resetDemo, setPhoto } = useStore();
   const { settings } = state;
   const [photoError, setPhotoError] = useState(false);
+  const [choosing, setChoosing] = useState(false);
   // Pick a picture, then choose the part that shows in your frame.
   const picked = (photo: Photo) => {
     setPhotoError(false);
@@ -27,6 +29,30 @@ export function Settings() {
 
   return (
     <Screen title="SETTINGS" onBack={nav.back}>
+      <Modal visible={choosing} transparent animationType="fade" onRequestClose={() => setChoosing(false)}>
+        <View style={styles.modalBack}>
+          <Panel style={styles.modal}>
+            <Title size={26}>PICK AN AVATAR</Title>
+            <View style={styles.avatarGrid}>
+              {AVATAR_CHOICES.map((uri, i) => (
+                <Pressable
+                  key={i}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Avatar ${i + 1}`}
+                  onPress={() => {
+                    setPhoto(uri);
+                    setPhotoError(false);
+                    setChoosing(false);
+                  }}
+                >
+                  <Image source={{ uri }} style={[styles.avatarChoice, me.photo === uri && styles.avatarPicked]} />
+                </Pressable>
+              ))}
+            </View>
+            <ComicButton label="CANCEL" color="yellow" small onPress={() => setChoosing(false)} />
+          </Panel>
+        </View>
+      </Modal>
       <Panel style={styles.profile}>
         <PhotoInput accessibilityLabel="Change profile picture" onPicked={picked} onError={failed}>
           <Avatar user={me} size={84} />
@@ -41,6 +67,7 @@ export function Settings() {
             <PhotoInput accessibilityLabel={me.photo ? 'Change photo' : 'Add photo'} onPicked={picked} onError={failed}>
               <ComicButton label={me.photo ? 'CHANGE' : 'ADD PHOTO'} small color="yellow" onPress={() => undefined} />
             </PhotoInput>
+            <ComicButton label="AVATAR" small color="yellow" onPress={() => setChoosing(true)} />
             {me.photo && state.photoSource && (
               <ComicButton label="ADJUST" small color="yellow" onPress={() => nav.push({ name: 'photo', source: state.photoSource! })} />
             )}
@@ -51,6 +78,7 @@ export function Settings() {
             )}
           </View>
           {photoError && <Text style={styles.small}>Couldn't load that picture. Try another one.</Text>}
+          <Text style={styles.small}>Gallery not opening? Pick an avatar instead.</Text>
         </View>
       </Panel>
       <Panel style={styles.list}>
@@ -287,6 +315,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 8,
+  },
+  modalBack: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modal: {
+    gap: 14,
+  },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  avatarChoice: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 3,
+    borderColor: colors.white,
+  },
+  avatarPicked: {
+    borderColor: colors.yellow,
   },
   remove: {
     fontFamily: fonts.bold,

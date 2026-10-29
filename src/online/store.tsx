@@ -161,7 +161,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       comment: (id, index, text) => onGame(id, (g, u) => addComment(g, u, index, text, Date.now())),
       vote: (id, picks) => onGame(id, (g, u) => castVotes(g, u, picks)),
       setPhoto: (photo, source) =>
-        update((s) => (s.me ? { ...s, me: { ...s.me, photo }, photoSource: photo ? (source ?? s.photoSource) : undefined } : s)),
+        update((s) => (s.me ? { ...s, me: { ...s.me, photo }, photoSource: photo ? source : undefined } : s)),
       react: (id, index, emoji) => onGame(id, (g, u) => toggleReaction(g, u, index, emoji)),
       botMove: (id) => update((s) => ({ ...s, games: s.games.map((g) => (g.id === id && botHolds(s, g) ? botPass(g, Date.now()) : g)) })),
       seeEnd: (id) => update((s) => (s.endSeen[id] ? s : { ...s, endSeen: { ...s.endSeen, [id]: true } })),
