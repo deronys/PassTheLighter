@@ -71,29 +71,28 @@ export function Screen({ title, onBack, lighters, onLighters, onChat, unread = 0
         </ImageBackground>
       )}
       {scroll ? (
-        <ScrollView style={styles.fill} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={styles.fill} contentContainerStyle={[styles.scroll, onChat && styles.chatRoom]} keyboardShouldPersistTaps="handled">
           {body}
         </ScrollView>
       ) : (
         <View style={[styles.fill, styles.scroll, styles.bodyFixed]}>{body}</View>
       )}
       {footer && <View style={[styles.footer, { paddingBottom: 14 + insets.bottom }]}>{footer}</View>}
-      {onChat && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={unread ? `Chat, ${unread} new` : 'Chat'}
-          onPress={onChat}
-          style={[styles.chatButton, { bottom: (footer ? 96 : 24) + insets.bottom }]}
-        >
-          <ChatIcon />
-          {unread > 0 && (
-            <View style={styles.unread}>
-              <Text style={styles.unreadLabel}>{unread > 9 ? '9+' : unread}</Text>
-            </View>
-          )}
-        </Pressable>
-      )}
+      {onChat && <ChatButton onPress={onChat} unread={unread} style={{ bottom: (footer ? 96 : 24) + insets.bottom }} />}
     </ImageBackground>
+  );
+}
+
+function ChatButton({ onPress, unread, style }: { onPress: () => void; unread: number; style?: StyleProp<ViewStyle> }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Chat, ${unread} new` : 'Chat'} onPress={onPress} style={[styles.chatButton, style]}>
+      <ChatIcon />
+      {unread > 0 && (
+        <View style={styles.unread}>
+          <Text style={styles.unreadLabel}>{unread > 9 ? '9+' : unread}</Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -464,6 +463,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.ink,
     marginTop: 2,
+  },
+  // Room under the page so its last buttons can scroll clear of the chat button.
+  chatRoom: {
+    paddingBottom: 96,
   },
   chatButton: {
     position: 'absolute',

@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.16.0 - 2026-10-29
+
+- Choosing who gets the lighter: swipe left or right on the players to go through them. The arrows still work.
+- The chat button no longer covers the right arrow: game pages leave room at the bottom so everything can scroll clear of it.
+
 ## v0.15.2 - 2026-10-29
 
 - Settings has an AVATAR button: pick one of 18 ready-made cartoon portraits as your profile picture. It works where the phone's gallery can't be opened, such as the viewer inside the Claude app.
