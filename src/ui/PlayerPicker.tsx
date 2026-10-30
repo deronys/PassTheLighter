@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Animated, type GestureResponderEvent, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, type GestureResponderEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path, Polygon } from 'react-native-svg';
 
 import { play } from '../feedback';
@@ -14,58 +14,97 @@ type Props = {
   onSelect: (index: number) => void;
 };
 
-// "Pass it to...": three players at a time with the chosen one in the middle,
-// under a yellow pointer. Swipe left or right, or use the arrows, to go
-// through everyone.
+// "Pass it to...": the players sit in a loop with the chosen one in the
+// middle, under a yellow pointer. Drag them left or right with a finger and
+// they follow it, then settle on the nearest player. Arrows and a tap on a
+// neighbour work too.
 export function PlayerPicker({ users, counts, selected, onSelect }: Props) {
   const n = users.length;
-  const at = (offset: number) => (selected + offset + n) % n;
-  const step = (dir: number) => {
-    play('tap');
-    onSelect(at(dir));
-  };
-  const side = (offset: number) => {
-    const user = users[at(offset)];
-    return (
-      <Pressable accessibilityRole="button" accessibilityLabel={user.name} onPress={() => step(offset)} style={styles.side}>
-        <Avatar user={user} size={70} count={counts[user.id] ?? 0} label={firstWord(user.name)} />
-      </Pressable>
-    );
-  };
-  const chosen = users[selected];
+  const wrap = (i: number) => ((i % n) + n) % n;
 
-  // Swipe like a carousel: left brings the next player, right the previous one.
-  // Plain touch events, so the swipe works in phone browsers as well as the app.
-  const start = useRef<{ x: number; y: number } | null>(null);
-  const dx = useRef(new Animated.Value(0)).current;
-  const touch = (e: GestureResponderEvent) => {
-    const n = e.nativeEvent as unknown as { pageX?: number; pageY?: number; changedTouches?: ArrayLike<{ pageX: number; pageY: number }> };
-    const t = n.changedTouches?.[0];
-    return { x: t?.pageX ?? n.pageX ?? 0, y: t?.pageY ?? n.pageY ?? 0 };
+  // Where the carousel is, counted in players. It never wraps, so it can
+  // glide past the end of the list straight back to the first player.
+  const pos = useRef(new Animated.Value(selected)).current;
+  const now = useRef(selected);
+  const drag = useRef<{ x: number; y: number; from: number; t: number; lastX: number; v: number; sideways?: boolean } | null>(null);
+
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+
+  const track = (value: number) => {
+    now.current = value;
+    pos.setValue(value);
+    const nearest = wrap(Math.round(value));
+    if (nearest !== selectedRef.current) {
+      selectedRef.current = nearest;
+      play('tap');
+      onSelect(nearest);
+    }
   };
-  const swipe = {
+  const settle = (target: number) => {
+    Animated.spring(pos, { toValue: target, useNativeDriver: nativeDriver, speed: 16, bounciness: 6 }).start();
+    now.current = target;
+    const nearest = wrap(target);
+    if (nearest !== selectedRef.current) {
+      selectedRef.current = nearest;
+      play('tap');
+      onSelect(nearest);
+    }
+  };
+  const step = (dir: number) => settle(Math.round(now.current) + dir);
+
+  // Picked from outside (or a new game): glide to that player the short way round.
+  useEffect(() => {
+    const here = Math.round(now.current);
+    if (wrap(here) === selected) return;
+    let diff = selected - wrap(here);
+    if (diff > n / 2) diff -= n;
+    if (diff < -n / 2) diff += n;
+    settle(here + diff);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, n]);
+
+  const point = (e: GestureResponderEvent) => {
+    const t = e.nativeEvent as unknown as { pageX?: number; pageY?: number; changedTouches?: ArrayLike<{ pageX: number; pageY: number }> };
+    const c = t.changedTouches?.[0];
+    return { x: c?.pageX ?? t.pageX ?? 0, y: c?.pageY ?? t.pageY ?? 0 };
+  };
+  const touch = {
     onTouchStart: (e: GestureResponderEvent) => {
-      start.current = touch(e);
+      const p = point(e);
+      pos.stopAnimation((v) => (now.current = v));
+      drag.current = { x: p.x, y: p.y, from: now.current, t: Date.now(), lastX: p.x, v: 0 };
     },
     onTouchMove: (e: GestureResponderEvent) => {
-      if (start.current) dx.setValue(Math.max(-60, Math.min(60, (touch(e).x - start.current.x) / 2)));
+      const d = drag.current;
+      if (!d) return;
+      const p = point(e);
+      // Decide once whether this is a sideways drag or the page scrolling.
+      if (d.sideways === undefined && Math.max(Math.abs(p.x - d.x), Math.abs(p.y - d.y)) > 6) d.sideways = Math.abs(p.x - d.x) > Math.abs(p.y - d.y);
+      if (!d.sideways) return;
+      const t = Date.now();
+      if (t > d.t) d.v = (p.x - d.lastX) / (t - d.t);
+      d.t = t;
+      d.lastX = p.x;
+      track(d.from - (p.x - d.x) / SLOT);
     },
-    onTouchEnd: (e: GestureResponderEvent) => {
-      if (!start.current) return;
-      const end = touch(e);
-      const moved = end.x - start.current.x;
-      // A mostly up-and-down move is the page scrolling, not a swipe.
-      const sideways = Math.abs(moved) > Math.abs(end.y - start.current.y);
-      start.current = null;
-      if (sideways && moved < -SWIPE_DISTANCE) step(1);
-      else if (sideways && moved > SWIPE_DISTANCE) step(-1);
-      Animated.spring(dx, { toValue: 0, useNativeDriver: nativeDriver, bounciness: 8 }).start();
+    onTouchEnd: () => {
+      const d = drag.current;
+      drag.current = null;
+      if (!d?.sideways) return;
+      // A quick flick carries on to the next player even after a short drag.
+      settle(Math.round(now.current - d.v * 120 / SLOT));
     },
     onTouchCancel: () => {
-      start.current = null;
-      Animated.spring(dx, { toValue: 0, useNativeDriver: nativeDriver }).start();
+      drag.current = null;
+      settle(Math.round(now.current));
     },
   };
+
+  // Only the players near the middle are drawn; the rest wait off to the sides.
+  const fade = Math.min(1.6, n / 2);
+  const relative = (i: number) =>
+    Animated.add(Animated.modulo(Animated.add(Animated.multiply(pos, -1), i + n * 1000 + n / 2), n), -n / 2);
 
   return (
     <View style={styles.wrap}>
@@ -75,20 +114,55 @@ export function PlayerPicker({ users, counts, selected, onSelect }: Props) {
       <Svg width={34} height={20} style={styles.pointer}>
         <Polygon points="0,0 34,0 17,20" fill={colors.yellow} />
       </Svg>
-      <Animated.View style={[styles.row, { transform: [{ translateX: dx }] }]} {...swipe}>
+      <View style={styles.row}>
         <Arrow dir={-1} onPress={() => step(-1)} />
-        {n > 2 && side(-1)}
-        <View accessibilityLabel={`Passing to ${chosen.name}`} style={styles.center}>
-          <Avatar user={chosen} size={94} count={counts[chosen.id] ?? 0} selected label={firstWord(chosen.name)} />
+        <View style={styles.window} {...touch}>
+          {users.map((user, i) => {
+            const rel = relative(i);
+            const isChosen = i === selected;
+            return (
+              <Animated.View
+                key={user.id}
+                pointerEvents={n > 1 ? 'box-none' : 'auto'}
+                style={[
+                  styles.slot,
+                  {
+                    opacity: n < 3 ? 1 : rel.interpolate({ inputRange: [-fade, -1, 0, 1, fade], outputRange: [0, 0.85, 1, 0.85, 0], extrapolate: 'clamp' }),
+                    transform: [
+                      { translateX: Animated.multiply(rel, SLOT) },
+                      { scale: rel.interpolate({ inputRange: [-1, 0, 1], outputRange: [SIDE / CENTER, 1, SIDE / CENTER], extrapolate: 'clamp' }) },
+                    ],
+                  },
+                  isChosen && styles.front,
+                ]}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isChosen ? `Passing to ${user.name}` : user.name}
+                  onPress={() => {
+                    if (isChosen) return;
+                    let diff = i - selected;
+                    if (diff > n / 2) diff -= n;
+                    if (diff < -n / 2) diff += n;
+                    step(diff);
+                  }}
+                >
+                  <Avatar user={user} size={CENTER} count={counts[user.id] ?? 0} selected={isChosen} label={firstWord(user.name)} />
+                </Pressable>
+              </Animated.View>
+            );
+          })}
         </View>
-        {n > 1 && side(1)}
         <Arrow dir={1} onPress={() => step(1)} />
-      </Animated.View>
+      </View>
     </View>
   );
 }
 
-const SWIPE_DISTANCE = 40;
+// Distance between two players, and their sizes in the middle and at the sides.
+const SLOT = 88;
+const CENTER = 94;
+const SIDE = 70;
 
 const firstWord = (name: string) => name.split(' ')[0];
 
@@ -105,6 +179,7 @@ function Arrow({ dir, onPress }: { dir: 1 | -1; onPress: () => void }) {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
+    alignSelf: 'stretch',
   },
   title: {
     textAlign: 'center',
@@ -116,13 +191,25 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    alignSelf: 'stretch',
+    gap: 4,
   },
-  side: {
-    opacity: 0.85,
-    marginTop: 14,
+  window: {
+    flex: 1,
+    // Phone browsers keep scrolling the page up and down, and leave sideways drags to us.
+    ...(Platform.OS === 'web' ? ({ touchAction: 'pan-y' } as object) : null),
+    height: CENTER + 40,
+    overflow: 'hidden',
   },
-  center: {
-    marginHorizontal: 4,
+  slot: {
+    position: 'absolute',
+    top: 10,
+    left: '50%',
+    marginLeft: -(CENTER + 30) / 2,
+    width: CENTER + 30,
+    alignItems: 'center',
+  },
+  front: {
+    zIndex: 1,
   },
 });

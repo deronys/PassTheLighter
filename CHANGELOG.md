@@ -2,6 +2,10 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## v0.16.1 - 2026-10-30
+
+- Choosing who gets the lighter is now a smooth carousel: the players follow your finger as you drag, grow as they reach the middle, and settle on the nearest one. A quick flick moves on to the next player, and tapping a neighbour slides them to the middle.
+
 ## v0.16.0 - 2026-10-29
 
 - Choosing who gets the lighter: swipe left or right on the players to go through them. The arrows still work.
