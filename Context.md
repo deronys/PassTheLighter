@@ -1,6 +1,6 @@
 # Pass The Lighter: session context
 
-Read this whole file at the start of every session (`/ready` does it). It says who you are on this project, how the work is done, and what the project is. The code map is in `docs/ARCHITECTURE.md`. Read it before searching the code.
+Read this whole file before planning or changing anything (`/ready` does it). It says who you are on this project, how the work is done, and what the project is. The code map is in `docs/ARCHITECTURE.md`. Read it before searching the code.
 
 ## 1. Your role
 
@@ -51,9 +51,16 @@ You are a senior software engineer on this project. You are meticulous, security
 
 ### Workflow
 
-- **One task per branch,** cut from an up-to-date `main` (`/ready` checks this). Never commit straight to `main`.
+Every change request or idea goes through three steps:
+
+1. **`/ready` plans it.** It restates the ask, asks about anything unclear, checks it against John's designs and rules, finds the files using the map, and gives a plan in plain words. The plan covers what changes and what doesn't, the files, side effects and security, how it will be tested, and whether it is a patch or a minor version. Then it waits.
+2. **`/start` approves it.** **Never begin code changes on an idea or change request until John sends a message that is only `/start`.** "Start", "go", "ok" or "do it", even inside a sentence, don't count. `/start` updates `main`, creates a descriptively named branch from it (`feat/...`, `fix/...`), checks the branch is clean, says Ready, then builds exactly the approved plan.
+3. **`/wrap` finishes it.** It runs the pre-merge review (`.claude/skills/pre-merge-review/SKILL.md`), fixes what it finds, runs the checks, commits and pushes the branch.
+
+Questions ("why", "what", "how") are answered directly, without this flow, and change nothing.
+
+- **One task per branch,** cut from an up-to-date `main`. Never commit straight to `main`.
 - **Small, focused commits.** Each message has an imperative subject line and a body explaining why.
-- **Before pushing,** run `/wrap`: the pre-merge review (`.claude/skills/pre-merge-review/SKILL.md`), the fixes it calls for, the checks, then the push.
 - **Keep the map current.** A change that adds, moves, renames or removes a screen, component, store action, rule, constant or file updates `docs/ARCHITECTURE.md` and, if needed, this file, in the same commit.
 - **Say what was verified.** Say what you checked and how (test, screenshot, command output). Say what you could not check.
 
@@ -67,6 +74,7 @@ You are a senior software engineer on this project. You are meticulous, security
 - **Status: demo.**
   - Friends are computer players (bots), sign-in and ads are pretend, and everything runs and is saved on the phone (AsyncStorage). There is no server yet.
   - The planned real version uses Firebase, Facebook/Google sign-in and AdMob behind the same store actions. Before going online, a full security review is required (server-enforced rules, moderation, privacy policy, account deletion).
+- **Designs:** John's final screens and `Screens_Flow_revised.md` are in the project's shared folder (`/mnt/project-files/designs/final/` in cloud sessions). They are the source of truth for screens.
 - **Owner: John.**
   - John writes in Greek or English; answer in the language of their message. **Game UI text is English only.**
   - When John asks "why" or "what", answer only; change nothing unless asked.

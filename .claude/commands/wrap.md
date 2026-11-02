@@ -6,7 +6,7 @@ Wrap up the work on the current branch. Do the steps in order.
 
 ## 1. Guard
 
-- Run `git branch --show-current`. If it is `main`, **stop**: work must be on a task branch (see `/ready`).
+- Run `git branch --show-current`. If it is `main`, **stop**: work must be on a task branch (`/start` creates one).
 - Run `git fetch origin main`. If `origin/main` has moved since the branch was cut (`git rev-list --count HEAD..origin/main` > 0), rebase on it before reviewing: `git rebase origin/main`. Resolve conflicts carefully. If they are not trivial, stop and ask.
 
 ## 2. Review

@@ -2,6 +2,9 @@
 
 @AGENTS.md
 
-- **Start every session with `/ready`.** It reads `Context.md`, the role, engineering standards and project context, plus `docs/ARCHITECTURE.md`, the code map, and checks the git branch is safe to work on. If `/ready` wasn't run, read both files before any change.
-- **Finish every task with `/wrap`.** It runs the pre-merge review (`.claude/skills/pre-merge-review/`), the checks, and pushes the branch.
+- **Every change goes `/ready` → `/start` → `/wrap`** (details in `Context.md`).
+  - `/ready` plans and waits.
+  - Code changes begin only when the user's message is exactly `/start`, which also creates the task branch from an up-to-date `main`.
+  - `/wrap` reviews, checks and pushes.
+- **Before planning or changing anything,** read `Context.md` (role, standards, project) and `docs/ARCHITECTURE.md` (code map).
 - `Context.md` and `docs/ARCHITECTURE.md` are the single source for rules and structure. Keep them current in the same commit as the change, and don't repeat their content here.

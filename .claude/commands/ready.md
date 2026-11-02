@@ -1,44 +1,49 @@
 ---
-description: Start a session - check the branch is fresh and main is up to date, load Context.md and the code map, then report ready.
-allowed-tools: Bash(git status:*), Bash(git fetch:*), Bash(git rev-parse:*), Bash(git branch:*), Bash(git rev-list:*), Bash(git merge-base:*), Bash(git log:*), Read
+description: Plan a change before any code - restate the ask, ask about unclear points, check designs and rules, find the files, give a plain-words plan, then wait for /start.
+argument-hint: <the change or idea>
 ---
 
-Get this session ready to work on Pass The Lighter. Do the steps in order and stop at the first failure.
+The request to plan: $ARGUMENTS
+(If it is empty, use the user's latest change request or idea in the conversation.)
 
-## 1. Git safety gate
+This is the planning step. **Don't edit any file, create a branch, or run anything that changes state.** Reading files and running read-only commands is fine.
 
-Run these and read the results. Don't change anything in this step.
+## 1. Load the context
 
-```bash
-git fetch origin main
-git branch --show-current
-git status --porcelain
-git rev-parse main origin/main
-git rev-list --count main..origin/main
-git rev-list --count origin/main..HEAD
-git merge-base --is-ancestor origin/main HEAD && echo based-on-latest-main || echo behind-main
-```
+Read all of `Context.md`, then all of `docs/ARCHITECTURE.md`. Skip this only if both were already read in this session and haven't changed since.
 
-**STOP**, and tell the user exactly which check failed and the command that fixes it, if any of these is true:
+## 2. Understand the ask
 
-1. **On `main`** (or detached HEAD). Work happens on a task branch. Fix: `git switch main && git pull --ff-only && git switch -c <type>/<short-task-name>`.
-2. **Local `main` is behind `origin/main`** (count > 0). Fix: `git switch main && git pull --ff-only`, then branch again.
-3. **The branch doesn't include the latest `origin/main`** (`behind-main`). Fix: on a fresh branch, recreate it from the updated `main`. If it already has work, rebase it on `origin/main` (and say that is what you would run).
-4. **The branch isn't new:** it already has commits that aren't on `origin/main` (count > 0). Say how many and list them with `git log --oneline origin/main..HEAD`, then ask whether to continue that work or start a new branch. Continue only if the user confirms.
-5. **Uncommitted changes** (`git status --porcelain` not empty). List them and ask what to do with them.
+- Restate the request in one or two sentences, in the user's words.
+- List everything that is unclear or could be read two ways, as short questions. Put a recommended answer on each, so the user can just say yes.
+- Ask nothing that the designs, `Context.md` or the code already answer.
 
-Never run destructive git commands (`reset --hard`, `clean`, force push, branch deletion) yourself. Only suggest them, and only if needed.
+## 3. Check it against what is already decided
 
-## 2. Load the context
+- **John's final designs**, where they're available: the project's `designs/final/` folder and `Screens_Flow_revised.md`. Say whether the request matches them, changes them, or isn't covered.
+- **John's rules and decisions** in `Context.md` (English UI, no take-backs, final pass without a question, future ideas not to be built yet...). Flag any conflict plainly.
 
-Read all of `Context.md`, then all of `docs/ARCHITECTURE.md`. Follow them for the whole session: role, standards, workflow, and the project's rules and decisions.
+## 4. Locate
 
-## 3. Report
+Use the map to name the exact files and components involved. Open them only as far as needed to make the plan accurate.
 
-Reply in the user's language, in a few lines:
+## 5. The plan, in plain words
 
-- `Ready.` and the branch name, plus the latest `main` commit (short hash and subject).
-- The current version (from `package.json`) and the last `CHANGELOG.md` entry title.
-- One line confirming the role and the standards are loaded.
+Write for John, not for a developer. No code.
 
-Then wait for the task.
+- **What changes,** as the player will see it.
+- **What does not change.** Name anything a player might expect to be affected.
+- **Files** to touch, one line each.
+- **Side effects and risks:** saved data, other screens, bots, performance. Include security (user text, who is allowed to act, hidden questions).
+- **How it will be tested:** unit tests for rules, and phone-sized screen checks for UI.
+- **Version:** patch (a fix) or minor (a new feature), and why. Major only if saved data or the game's rules break.
+
+For a tiny change (a word, a colour, a spacing), keep the whole plan to 2–3 lines.
+
+## 6. Wait
+
+End with exactly this, in the user's language: the open questions if any, then
+
+> Send **/start** on its own to begin.
+
+Then stop. **Don't write code until the user sends a message that is only `/start`.** Answers to the questions update the plan, and you show the updated plan again. Any other wording, such as "start", "go", "ok" or "do it", even inside a sentence, is not approval.
