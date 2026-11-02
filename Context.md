@@ -55,7 +55,7 @@ Every change request or idea goes through three steps:
 
 1. **`/ready` plans it.** It restates the ask, asks about anything unclear, checks it against John's designs and rules, finds the files using the map, and gives a plan in plain words. The plan covers what changes and what doesn't, the files, side effects and security, how it will be tested, and whether it is a patch or a minor version. Then it waits.
 2. **`/start` approves it.** **Never begin code changes on an idea or change request until John sends a message that is only `/start`.** "Start", "go", "ok" or "do it", even inside a sentence, don't count. `/start` updates `main`, creates a descriptively named branch from it (`feat/...`, `fix/...`), checks the branch is clean, says Ready, then builds exactly the approved plan.
-3. **`/wrap` finishes it.** It runs the pre-merge review (`.claude/skills/pre-merge-review/SKILL.md`), fixes what it finds, runs the checks, commits and pushes the branch.
+3. **`/wrap` finishes it.** It runs the pre-merge review (`.claude/skills/pre-merge-review/SKILL.md`), fixes what it finds and runs the checks. **Its last step before committing is to update `docs/ARCHITECTURE.md` and `Context.md` so they match the new version.** Then it commits and pushes the branch.
 
 Questions ("why", "what", "how") are answered directly, without this flow, and change nothing.
 

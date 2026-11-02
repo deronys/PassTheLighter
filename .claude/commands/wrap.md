@@ -27,22 +27,32 @@ How to run it depends on the size of the change. Measure it with `git diff --sho
 
 - Fix every Blocker and Should fix, then re-run `npm run typecheck`, `npm test` and the Playwright checks for the touched screens.
 - Repeat until the review finds no Blocker or Should fix.
-- Make sure `docs/ARCHITECTURE.md` and `Context.md` match the final code.
 
-## 4. Commit and push
+## 4. Update the docs (last step before committing)
+
+Do this after all review fixes, so the docs describe the final code of this version:
+
+- **`docs/ARCHITECTURE.md`:** every screen, component, store action, rule, constant and file this branch added, moved, renamed or removed is reflected, and nothing in the map points to something that no longer exists.
+- **`Context.md`:** any project rule, decision, workflow or command that changed.
+- **`README.md`:** only if how to play or run the game changed.
+
+If nothing needs updating, note why (for example: "only a colour changed, no structure moved").
+
+## 5. Commit and push
 
 - Stage only the files that belong to the task. Check `git status` and never commit secrets or generated output.
 - Commit with an imperative subject line and a body saying why. Add the session's required attribution trailers.
 - Push the branch with `git push -u origin <branch>`. Never force-push `main`. On a network error, retry up to 4 times with backoff (2s, 4s, 8s, 16s).
 - Don't merge into `main` or cut a release unless the user asked for it. The release steps are in `Context.md`.
 
-## 5. Report
+## 6. Report
 
 Reply in the user's language, briefly:
 
 - the review verdict and what was fixed;
 - the checks run and their results;
 - anything left open;
+- **Docs:** "updated (what)" or "no change needed (why)";
 - the pushed branch.
 
 Offer the next step: merge to `main` and release.

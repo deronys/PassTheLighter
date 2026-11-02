@@ -49,7 +49,7 @@ App.tsx                  fonts, providers, the route switch (render()), the toas
 | `CLAUDE.md`, `AGENTS.md` | Loaded automatically by Claude Code. Short pointers plus generic Expo guidance. |
 | `.claude/commands/ready.md` | `/ready`: loads `Context.md` and this map, plans a change in plain words, waits for `/start`. No edits. |
 | `.claude/commands/start.md` | `/start` (only when sent alone): updates `main`, creates a descriptive task branch, checks it is clean, builds the approved plan. |
-| `.claude/commands/wrap.md` | `/wrap`: runs the pre-merge review, fixes, checks, commits and pushes the branch. |
+| `.claude/commands/wrap.md` | `/wrap`: runs the pre-merge review, fixes, checks, updates this map and `Context.md` as its last step, then commits and pushes the branch. |
 | `.claude/skills/pre-merge-review/SKILL.md` | The pre-merge code review checklist. |
 
 ## Screens: route → component → file
