@@ -8,6 +8,26 @@ The request to plan: $ARGUMENTS
 
 This is the planning step. **Don't edit any file, create a branch, or run anything that changes state.** Reading files and running read-only commands is fine.
 
+## 0. Unfinished work first
+
+Check whether the last task was wrapped, using read-only commands:
+
+```bash
+git branch --show-current
+git status --porcelain
+git fetch origin main
+git rev-list --count origin/main..HEAD
+git rev-list --count @{u}..HEAD 2>/dev/null || echo no-upstream
+```
+
+The current branch has unwrapped work if it isn't `main` and any of these is true:
+
+- it has uncommitted changes;
+- it has commits that aren't on `origin/main` but were never pushed (no upstream, or ahead of it);
+- it has commits that aren't on `origin/main` and `/wrap` hasn't run on them in this session.
+
+If so, **remind the user first**: name the branch and list the unfinished work in one or two lines. Then ask whether to run `/wrap` before starting the new request (in Greek: «Υπάρχει δουλειά στο branch X που δεν έχει γίνει /wrap. Να τρέξω πρώτα το /wrap;»). Wait for the answer before planning anything.
+
 ## 1. Load the context
 
 Read all of `Context.md`, then all of `docs/ARCHITECTURE.md`. Skip this only if both were already read in this session and haven't changed since.

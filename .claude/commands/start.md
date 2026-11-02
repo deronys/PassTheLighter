@@ -41,4 +41,4 @@ Then implement the approved plan, nothing more. Follow `Context.md`:
 
 If the work shows the plan must change in a way the user would notice, stop and explain. The changed part needs a new `/start`.
 
-When the work is done, run `/wrap`.
+When the work is done, don't run `/wrap` on your own. **Always end that reply by asking whether to run it**, in the user's language (in Greek: «Να τρέξω το /wrap;»). Run it only when they say yes.
