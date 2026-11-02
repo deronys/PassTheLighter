@@ -45,6 +45,11 @@ App.tsx                  fonts, providers, the route switch (render()), the toas
 | `assets/sounds/` | `tap`, `pop`, `boom`, `drumroll`, `fanfare` (made by `scripts/make-sounds.py`). |
 | `app.json` | Expo config: name, version, icons, image-picker plugin (camera and microphone permissions off). |
 | `CHANGELOG.md` | One entry per release. |
+| `Context.md` | Role, engineering standards, workflow and project context. Read at session start by `/ready`. |
+| `CLAUDE.md`, `AGENTS.md` | Loaded automatically by Claude Code. Short pointers plus generic Expo guidance. |
+| `.claude/commands/ready.md` | `/ready`: git safety gate (fresh task branch, `main` up to date), loads `Context.md` and this map. |
+| `.claude/commands/wrap.md` | `/wrap`: runs the pre-merge review, fixes, checks, commits and pushes the branch. |
+| `.claude/skills/pre-merge-review/SKILL.md` | The pre-merge code review checklist. |
 
 ## Screens: route → component → file
 
