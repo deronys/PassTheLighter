@@ -10,10 +10,10 @@ import { useNav } from '../nav';
 import { firstName } from '../online/demo';
 import { type Game, MAX_QUESTION, canSee, isFinalPass, lastPass, lightersToEnd, players, reasonIndex, receives, roleOf } from '../online/rules';
 import { useStore } from '../online/store';
-import { colors, comicShadow, fonts } from '../theme';
+import { colors, fonts } from '../theme';
 import { PlayerPicker } from '../ui/PlayerPicker';
 import { QuestionDeck } from '../ui/QuestionDeck';
-import { Avatar, BubbleText, ComicButton, HiddenTicket, PassBanner, QuestionCoin, Screen, SpeechBubble, Tag, Title } from '../ui/kit';
+import { Avatar, BubbleText, ComicButton, GameName, HiddenTicket, PassBanner, QuestionCoin, Screen, SpeechBubble, Tag, Title } from '../ui/kit';
 import { WaitingRoom } from './Lobby';
 import { GameOver } from './End';
 import { BotMoveButton } from './DevBot';
@@ -89,7 +89,7 @@ function HolderScreen({ game }: { game: Game }) {
 
   return (
     <Screen title={last ? 'YOU GOT IT!' : 'PASS THE LIGHTER'} onBack={nav.back} footer={footer} {...bar}>
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <GameName name={game.name} />
       {last ? (
         <>
           <PassBanner
@@ -207,7 +207,7 @@ function PlayerStatus({ game }: { game: Game }) {
 
   return (
     <Screen {...bar} title="GAME STATUS" onBack={nav.back}>
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <GameName name={game.name} />
       <BotMoveButton game={game} />
       <PassBanner left={<Avatar user={me} size={70} label="You" />} right={<Avatar user={to} size={70} lighter label={firstName(to)} />}>
         <BannerText line="YOU PASSED THE LIGHTER TO" size={20} />
@@ -235,7 +235,7 @@ function GameStatus({ game }: { game: Game }) {
 
   return (
     <Screen {...bar} title="GAME STATUS" onBack={nav.back}>
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <GameName name={game.name} />
       {last ? (
         <>
           <PassBanner
@@ -283,13 +283,6 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     gap: 8,
-  },
-  gameName: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.cyan,
-    textAlign: 'center',
-    ...comicShadow,
   },
   bannerName: {
     fontFamily: fonts.bold,

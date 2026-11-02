@@ -6,7 +6,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useNav } from '../nav';
 import { useStore } from '../online/store';
-import { colors, comicShadow, fonts, nativeDriver } from '../theme';
+import { colors, comicShadow, fonts } from '../theme';
 import { ComicButton, Panel, Screen, Title, art } from '../ui/kit';
 
 const SPLASH_MS = 1800;

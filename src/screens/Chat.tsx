@@ -7,8 +7,8 @@ import { useNav } from '../nav';
 import { firstName } from '../online/demo';
 import { MAX_CHAT, players } from '../online/rules';
 import { useStore } from '../online/store';
-import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, ComicButton, Screen } from '../ui/kit';
+import { colors, fonts } from '../theme';
+import { Avatar, ComicButton, GameName, Screen } from '../ui/kit';
 import { useGameBar } from './gameBar';
 
 export function Chat({ id }: { id: string }) {
@@ -69,7 +69,7 @@ export function Chat({ id }: { id: string }) {
           ) : undefined
         }
       >
-        <Text style={styles.gameName}>{g.name.toUpperCase()}</Text>
+        <GameName name={g.name} />
         <ScrollView ref={scroll} style={styles.fill} contentContainerStyle={styles.list}>
           {g.chat.length === 0 && <Text style={styles.hint}>No messages yet. Say hi to the group!</Text>}
           {g.chat.map((m, i) => {
@@ -94,13 +94,6 @@ export function Chat({ id }: { id: string }) {
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-  },
-  gameName: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.cyan,
-    textAlign: 'center',
-    ...comicShadow,
   },
   hint: {
     fontFamily: fonts.body,

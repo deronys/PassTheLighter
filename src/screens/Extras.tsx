@@ -1,6 +1,6 @@
 // 14 Settings and 15 Friends.
 import { useState } from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AVATAR_CHOICES } from '../data/avatarChoices';
 import { findCategory } from '../data/awards';
@@ -12,7 +12,7 @@ import { firstName, playerStats } from '../online/demo';
 import { players, visibleTo } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, fonts } from '../theme';
-import { Avatar, ComicButton, Panel, Screen, Title } from '../ui/kit';
+import { Avatar, ComicButton, Dialog, Panel, Screen, Title } from '../ui/kit';
 
 export function Settings() {
   const nav = useNav();
@@ -29,30 +29,26 @@ export function Settings() {
 
   return (
     <Screen title="SETTINGS" onBack={nav.back}>
-      <Modal visible={choosing} transparent animationType="fade" onRequestClose={() => setChoosing(false)}>
-        <View style={styles.modalBack}>
-          <Panel style={styles.modal}>
-            <Title size={26}>PICK AN AVATAR</Title>
-            <View style={styles.avatarGrid}>
-              {AVATAR_CHOICES.map((uri, i) => (
-                <Pressable
-                  key={i}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Avatar ${i + 1}`}
-                  onPress={() => {
-                    setPhoto(uri);
-                    setPhotoError(false);
-                    setChoosing(false);
-                  }}
-                >
-                  <Image source={{ uri }} style={[styles.avatarChoice, me.photo === uri && styles.avatarPicked]} />
-                </Pressable>
-              ))}
-            </View>
-            <ComicButton label="CANCEL" color="yellow" small onPress={() => setChoosing(false)} />
-          </Panel>
+      <Dialog visible={choosing} onClose={() => setChoosing(false)}>
+        <Title size={26}>PICK AN AVATAR</Title>
+        <View style={styles.avatarGrid}>
+          {AVATAR_CHOICES.map((uri, i) => (
+            <Pressable
+              key={i}
+              accessibilityRole="button"
+              accessibilityLabel={`Avatar ${i + 1}`}
+              onPress={() => {
+                setPhoto(uri);
+                setPhotoError(false);
+                setChoosing(false);
+              }}
+            >
+              <Image source={{ uri }} style={[styles.avatarChoice, me.photo === uri && styles.avatarPicked]} />
+            </Pressable>
+          ))}
         </View>
-      </Modal>
+        <ComicButton label="CANCEL" color="yellow" small onPress={() => setChoosing(false)} />
+      </Dialog>
       <Panel style={styles.profile}>
         <PhotoInput accessibilityLabel="Change profile picture" onPicked={picked} onError={failed}>
           <Avatar user={me} size={84} />
@@ -315,15 +311,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 8,
-  },
-  modalBack: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modal: {
-    gap: 14,
   },
   avatarGrid: {
     flexDirection: 'row',

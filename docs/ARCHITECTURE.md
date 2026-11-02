@@ -86,7 +86,7 @@ App.tsx                  fonts, providers, the route switch (render()), the toas
 | `watcher` | `GameStatus` | `Play.tsx` |
 | `finished` | `GameOver` (first `EndIntro`, then rounds with `Reactions`) | `End.tsx` |
 
-Shared pieces used by screens: `Round` and `FinalPass` (`Round.tsx`, one round = a question pass plus the next pass as its answer), `useGameBar()` (`gameBar.ts`, the lighter badge and chat button props for `Screen`), `BotMoveButton` (`DevBot.tsx`).
+Shared pieces used by screens: `Round` (`Round.tsx`, one round = a question pass plus the next pass as its answer; the last pass is drawn by its internal `FinalPass`), `useGameBar()` and `useDisplayName()` (`gameBar.ts`: the lighter badge and chat button props for `Screen`, and "You" or a player's first name), `BotMoveButton` (`DevBot.tsx`). Lobby's "Last move" times come from its own `useClock()` (re-renders every `CLOCK_MS`, 30 s); the store holds no clock.
 
 ## The rules (`src/online/rules.ts`)
 
@@ -109,7 +109,7 @@ Shared pieces used by screens: `Round` and `FinalPass` (`Round.tsx`, one round =
 
 - **Friends:** `DEMO_FRIENDS`, with `photo` from `DEMO_PHOTOS`.
 - **First run:** `newDemo()` and `signIn()` create the starting state and seeded games.
-- **Bots:** `tick()` drives them. It uses `BOT_MOVE_MS` (10 s), `botHolds`/`botPass`, `botChat` (`CHAT_LINES`), `botWrapUp` (comments `ROASTS`, votes) and `chance()` (deterministic randomness).
+- **Bots:** `tick()` drives them. It uses `BOT_MOVE_MS` (10 s), `botHolds`/`botPass`, `botChat` (`CHAT_LINES`), `botWrapUp` (comments from `ROASTS`, which the comments screen also offers as quick picks, and votes) and `chance()` (deterministic randomness).
 - **Profiles:** `playerStats()` gives the numbers for `Profile`.
 - **Toast:** `newlyPassedToYou()` decides when it shows.
 
@@ -119,7 +119,7 @@ Shared pieces used by screens: `Round` and `FinalPass` (`Round.tsx`, one round =
 |---|---|
 | Game rule or limit (players, lighters to end, text lengths) | Constants at the top of `rules.ts`, and add a test in `rules.test.ts` |
 | Wording or layout of one screen | That screen's component (tables above) |
-| Look shared by many screens (header, buttons, avatars, bubbles, chat button) | `ui/kit.tsx` (`Screen`, `ComicButton`, `Avatar`, `SpeechBubble`, `ChatButton`...) |
+| Look shared by many screens (header, buttons, avatars, bubbles, chat button) | `ui/kit.tsx` (`Screen`, `ComicButton`, `Avatar`, `SpeechBubble`, `ChatButton`, `Dialog` for every pop-up, `GameName`...) |
 | Colours or fonts | `theme.ts` |
 | Choosing who gets the lighter | `ui/PlayerPicker.tsx` (`SLOT`, `CENTER`, `SIDE`), used by `HolderScreen` in `Play.tsx` |
 | Question ideas: list | `data/questions.ts`. Cards: `ui/QuestionDeck.tsx`. How many first: `FIRST_IDEAS` in `Play.tsx` |

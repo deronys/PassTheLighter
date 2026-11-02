@@ -5,6 +5,7 @@ import {
   Animated,
   Image,
   ImageBackground,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -105,7 +106,7 @@ function BackArrow() {
 }
 
 // The lighter in the top right corner: how many times you got it in this game.
-export function LighterBadge({ count, onPress }: { count: number; onPress?: () => void }) {
+function LighterBadge({ count, onPress }: { count: number; onPress?: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -204,6 +205,40 @@ export function ComicButton({ label, onPress, color = 'red', disabled, small, st
 
 export function Panel({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.panel, style]}>{children}</View>;
+}
+
+// A window over the screen on a dark backdrop. With closeOnBackdrop, a tap
+// outside the window closes it.
+export function Dialog({
+  visible,
+  onClose,
+  closeOnBackdrop,
+  style,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  closeOnBackdrop?: boolean;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  const panel = <Panel style={[styles.dialog, style]}>{children}</Panel>;
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {closeOnBackdrop ? (
+        <Pressable style={styles.dialogBack} onPress={onClose} accessibilityLabel="Close">
+          {panel}
+        </Pressable>
+      ) : (
+        <View style={styles.dialogBack}>{panel}</View>
+      )}
+    </Modal>
+  );
+}
+
+// The game's name in small cyan capitals, under the header of every game screen.
+export function GameName({ name }: { name: string }) {
+  return <Text style={styles.gameName}>{name.toUpperCase()}</Text>;
 }
 
 // Yellow painted section titles, like "AND ASKED YOU".
@@ -353,55 +388,6 @@ export function Tag({ label, onPress }: { label: string; onPress: () => void }) 
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.tag}>
       <Text style={styles.tagLabel}>{label}</Text>
     </Pressable>
-  );
-}
-
-// A stopwatch with minutes and seconds in yellow boxes.
-export function Countdown({ ms, caption }: { ms: number; caption?: string }) {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const min = String(Math.floor(total / 60)).padStart(2, '0');
-  const sec = String(total % 60).padStart(2, '0');
-  return (
-    <View style={styles.countdown}>
-      {caption && <Text style={styles.countdownCaption}>{caption}</Text>}
-      <View style={styles.countdownRow}>
-        <Svg width={58} height={64} viewBox="0 0 58 64">
-          <Rect x={23} y={0} width={12} height={8} rx={2} fill={colors.yellow} />
-          <Circle cx={29} cy={36} r={25} fill={colors.yellow} stroke="#7A3B00" strokeWidth={3} />
-          <Circle cx={29} cy={36} r={18} fill={colors.red} />
-          <Path d="M29 36 L29 22 M29 36 L39 40" stroke="#FFFFFF" strokeWidth={4} strokeLinecap="round" />
-        </Svg>
-        <TimeBox value={min} unit="MIN" />
-        <View style={styles.colon}>
-          <View style={styles.colonDot} />
-          <View style={styles.colonDot} />
-        </View>
-        <TimeBox value={sec} unit="SEC" />
-      </View>
-    </View>
-  );
-}
-
-function TimeBox({ value, unit }: { value: string; unit: string }) {
-  return (
-    <LinearGradient colors={['#FFF06A', '#FFC400']} style={styles.timeBox}>
-      <Text style={styles.timeValue}>{value}</Text>
-      <Text style={styles.timeUnit}>{unit}</Text>
-    </LinearGradient>
-  );
-}
-
-// The yellow star burst behind "You have the lighter!".
-export function Burst({ size = 120 }: { size?: number }) {
-  const points = Array.from({ length: 24 }, (_, i) => {
-    const r = i % 2 ? size * 0.28 : size * 0.5;
-    const a = (Math.PI * 2 * i) / 24;
-    return `${size / 2 + r * Math.cos(a)},${size / 2 + r * Math.sin(a)}`;
-  }).join(' ');
-  return (
-    <Svg width={size} height={size}>
-      <Polygon points={points} fill={colors.yellow} />
-    </Svg>
   );
 }
 
@@ -577,6 +563,22 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.45,
+  },
+  dialogBack: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dialog: {
+    gap: 14,
+  },
+  gameName: {
+    fontFamily: fonts.comic,
+    fontSize: 18,
+    color: colors.cyan,
+    textAlign: 'center',
+    ...comicShadow,
   },
   panel: {
     backgroundColor: colors.panel,
@@ -811,49 +813,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.yellow,
     ...comicShadow,
-  },
-  countdown: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  countdownCaption: {
-    fontFamily: fonts.comic,
-    fontSize: 20,
-    color: colors.white,
-    ...comicShadow,
-  },
-  countdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  timeBox: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 3,
-    borderColor: '#5A2A00',
-  },
-  timeValue: {
-    fontFamily: fonts.comic,
-    fontSize: 40,
-    color: colors.red,
-  },
-  timeUnit: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.red,
-  },
-  colon: {
-    gap: 8,
-  },
-  colonDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.yellow,
   },
 });

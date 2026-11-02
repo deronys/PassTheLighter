@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, type GestureResponderEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path, Polygon } from 'react-native-svg';
 
 import { play } from '../feedback';
+import { firstName } from '../online/demo';
 import type { User } from '../online/rules';
 import { colors, nativeDriver } from '../theme';
 import { Avatar, Title } from './kit';
@@ -31,36 +32,30 @@ export function PlayerPicker({ users, counts, selected, onSelect }: Props) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
+  // Tells the screen as soon as another player reaches the middle.
+  const choose = (position: number) => {
+    const nearest = wrap(Math.round(position));
+    if (nearest === selectedRef.current) return;
+    selectedRef.current = nearest;
+    play('tap');
+    onSelect(nearest);
+  };
   const track = (value: number) => {
     now.current = value;
     pos.setValue(value);
-    const nearest = wrap(Math.round(value));
-    if (nearest !== selectedRef.current) {
-      selectedRef.current = nearest;
-      play('tap');
-      onSelect(nearest);
-    }
+    choose(value);
   };
   const settle = (target: number) => {
     Animated.spring(pos, { toValue: target, useNativeDriver: nativeDriver, speed: 16, bounciness: 6 }).start();
     now.current = target;
-    const nearest = wrap(target);
-    if (nearest !== selectedRef.current) {
-      selectedRef.current = nearest;
-      play('tap');
-      onSelect(nearest);
-    }
+    choose(target);
   };
   const step = (dir: number) => settle(Math.round(now.current) + dir);
 
   // Picked from outside (or a new game): glide to that player the short way round.
   useEffect(() => {
     const here = Math.round(now.current);
-    if (wrap(here) === selected) return;
-    let diff = selected - wrap(here);
-    if (diff > n / 2) diff -= n;
-    if (diff < -n / 2) diff += n;
-    settle(here + diff);
+    if (wrap(here) !== selected) settle(here + shortWay(selected - wrap(here), n));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, n]);
 
@@ -101,10 +96,22 @@ export function PlayerPicker({ users, counts, selected, onSelect }: Props) {
     },
   };
 
-  // Only the players near the middle are drawn; the rest wait off to the sides.
-  const fade = Math.min(1.6, n / 2);
-  const relative = (i: number) =>
-    Animated.add(Animated.modulo(Animated.add(Animated.multiply(pos, -1), i + n * 1000 + n / 2), n), -n / 2);
+  // Each player's place and look, driven by the carousel position. Built once
+  // per player count, not on every redraw. Only the players near the middle
+  // show; the rest fade out at the sides.
+  const looks = useMemo(() => {
+    const fade = Math.min(1.6, n / 2);
+    return Array.from({ length: n }, (_, i) => {
+      const rel = Animated.add(Animated.modulo(Animated.add(Animated.multiply(pos, -1), i + n * 1000 + n / 2), n), -n / 2);
+      return {
+        opacity: n < 3 ? 1 : rel.interpolate({ inputRange: [-fade, -1, 0, 1, fade], outputRange: [0, 0.85, 1, 0.85, 0], extrapolate: 'clamp' }),
+        transform: [
+          { translateX: Animated.multiply(rel, SLOT) },
+          { scale: rel.interpolate({ inputRange: [-1, 0, 1], outputRange: [SIDE / CENTER, 1, SIDE / CENTER], extrapolate: 'clamp' }) },
+        ],
+      };
+    });
+  }, [n, pos]);
 
   return (
     <View style={styles.wrap}>
@@ -118,36 +125,19 @@ export function PlayerPicker({ users, counts, selected, onSelect }: Props) {
         <Arrow dir={-1} onPress={() => step(-1)} />
         <View style={styles.window} {...touch}>
           {users.map((user, i) => {
-            const rel = relative(i);
             const isChosen = i === selected;
             return (
               <Animated.View
                 key={user.id}
                 pointerEvents={n > 1 ? 'box-none' : 'auto'}
-                style={[
-                  styles.slot,
-                  {
-                    opacity: n < 3 ? 1 : rel.interpolate({ inputRange: [-fade, -1, 0, 1, fade], outputRange: [0, 0.85, 1, 0.85, 0], extrapolate: 'clamp' }),
-                    transform: [
-                      { translateX: Animated.multiply(rel, SLOT) },
-                      { scale: rel.interpolate({ inputRange: [-1, 0, 1], outputRange: [SIDE / CENTER, 1, SIDE / CENTER], extrapolate: 'clamp' }) },
-                    ],
-                  },
-                  isChosen && styles.front,
-                ]}
+                style={[styles.slot, looks[i], isChosen && styles.front]}
               >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={isChosen ? `Passing to ${user.name}` : user.name}
-                  onPress={() => {
-                    if (isChosen) return;
-                    let diff = i - selected;
-                    if (diff > n / 2) diff -= n;
-                    if (diff < -n / 2) diff += n;
-                    step(diff);
-                  }}
+                  onPress={() => !isChosen && step(shortWay(i - selected, n))}
                 >
-                  <Avatar user={user} size={CENTER} count={counts[user.id] ?? 0} selected={isChosen} label={firstWord(user.name)} />
+                  <Avatar user={user} size={CENTER} count={counts[user.id] ?? 0} selected={isChosen} label={firstName(user)} />
                 </Pressable>
               </Animated.View>
             );
@@ -164,7 +154,12 @@ const SLOT = 88;
 const CENTER = 94;
 const SIDE = 70;
 
-const firstWord = (name: string) => name.split(' ')[0];
+// The shortest way round the loop from one player to another, in steps.
+function shortWay(diff: number, n: number): number {
+  if (diff > n / 2) return diff - n;
+  if (diff < -n / 2) return diff + n;
+  return diff;
+}
 
 function Arrow({ dir, onPress }: { dir: 1 | -1; onPress: () => void }) {
   return (

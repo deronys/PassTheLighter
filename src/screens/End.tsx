@@ -1,24 +1,17 @@
 // The end of a game: every secret revealed, comments, award votes and the champion.
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { findCategory } from '../data/awards';
 import { play } from '../feedback';
 import { useNav } from '../nav';
-import { firstName } from '../online/demo';
+import { ROASTS, firstName } from '../online/demo';
 import { type Game, MAX_COMMENT, MORE_REACTIONS, REACTIONS, everyoneVoted, lastHolder, lightersToEnd, players, results } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, ComicButton, Panel, PassBanner, Screen, Title, art } from '../ui/kit';
-import { useGameBar } from './gameBar';
+import { Avatar, ComicButton, Dialog, GameName, Panel, PassBanner, Screen, Title, art } from '../ui/kit';
+import { useDisplayName, useGameBar } from './gameBar';
 import { Round, roundIndexes } from './Round';
-
-const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
-
-function useName() {
-  const { me, user } = useStore();
-  return (id: string) => (id === me.id ? 'You' : firstName(user(id)));
-}
 
 function Missing({ title }: { title: string }) {
   const nav = useNav();
@@ -30,11 +23,11 @@ function Missing({ title }: { title: string }) {
 }
 
 // Shown once before the reveal: the game is over and the secrets are coming out.
-export function EndIntro({ game }: { game: Game }) {
+function EndIntro({ game }: { game: Game }) {
   const nav = useNav();
   const { seeEnd } = useStore();
   const bar = useGameBar(game);
-  const name = useName();
+  const name = useDisplayName();
   const ender = lastHolder(game);
   // A quick double tap on the final pass must not skip this screen.
   const ready = useRef(false);
@@ -50,7 +43,7 @@ export function EndIntro({ game }: { game: Game }) {
       onChat={undefined}
       footer={<ComicButton label="REVEAL THE SECRETS!" sound="pop" onPress={() => ready.current && seeEnd(game.id)} />}
     >
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <GameName name={game.name} />
       <Image source={art.handLighter} style={styles.introArt} resizeMode="contain" />
       <Title size={34} style={styles.center}>
         THE LIGHTER WENT OUT!
@@ -80,9 +73,9 @@ function IntroStep({ icon, text }: { icon: string; text: string }) {
 // question that made them do it, with reactions and comments.
 export function GameOver({ game }: { game: Game }) {
   const nav = useNav();
-  const { state, me, user, react } = useStore();
+  const { state, me, user } = useStore();
   const bar = useGameBar(game);
-  const name = useName();
+  const name = useDisplayName();
   const ender = lastHolder(game);
   const voted = !!game.votes[me.id];
   const isPlayer = players(game).includes(me.id);
@@ -98,7 +91,7 @@ export function GameOver({ game }: { game: Game }) {
 
   return (
     <Screen title="GAME OVER" onBack={nav.back} footer={footer} {...bar}>
-      <Text style={styles.gameName}>{game.name.toUpperCase()}</Text>
+      <GameName name={game.name} />
       {ender ? (
         <PassBanner left={<Avatar user={user(ender)} size={70} lighter />}>
           <Text style={styles.bannerName}>{name(ender)}</Text>
@@ -180,35 +173,31 @@ function Reactions({ game, index, n, disabled, children }: { game: Game; index: 
         </Pressable>
       )}
       {children}
-      <Modal visible={picking} transparent animationType="fade" onRequestClose={() => setPicking(false)}>
-        <Pressable style={styles.pickerBack} onPress={() => setPicking(false)} accessibilityLabel="Close">
-          <Panel style={styles.picker}>
-            <Title size={22} style={styles.center}>
-              PICK AN EMOJI
-            </Title>
-            <View style={styles.pickerGrid}>
-              {MORE_REACTIONS.map((emoji) => {
-                const mine = used.some((r) => r.emoji === emoji && r.from === me.id);
-                return (
-                  <Pressable
-                    key={emoji}
-                    accessibilityRole="button"
-                    accessibilityLabel={`React ${emoji} to round ${n}`}
-                    accessibilityState={{ selected: mine }}
-                    onPress={() => {
-                      toggle(emoji);
-                      setPicking(false);
-                    }}
-                    style={[styles.pickerItem, mine && styles.reactionMine]}
-                  >
-                    <Text style={styles.reactionEmoji}>{emoji}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Panel>
-        </Pressable>
-      </Modal>
+      <Dialog visible={picking} onClose={() => setPicking(false)} closeOnBackdrop style={styles.picker}>
+        <Title size={22} style={styles.center}>
+          PICK AN EMOJI
+        </Title>
+        <View style={styles.pickerGrid}>
+          {MORE_REACTIONS.map((emoji) => {
+            const mine = used.some((r) => r.emoji === emoji && r.from === me.id);
+            return (
+              <Pressable
+                key={emoji}
+                accessibilityRole="button"
+                accessibilityLabel={`React ${emoji} to round ${n}`}
+                accessibilityState={{ selected: mine }}
+                onPress={() => {
+                  toggle(emoji);
+                  setPicking(false);
+                }}
+                style={[styles.pickerItem, mine && styles.reactionMine]}
+              >
+                <Text style={styles.reactionEmoji}>{emoji}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Dialog>
     </View>
   );
 }
@@ -216,9 +205,9 @@ function Reactions({ game, index, n, disabled, children }: { game: Game; index: 
 // Comments on one revealed round.
 export function Comments({ id, index }: { id: string; index: number }) {
   const nav = useNav();
-  const { game, me, user, comment } = useStore();
+  const { game, user, comment } = useStore();
   const bar = useGameBar(game(id));
-  const name = useName();
+  const name = useDisplayName();
   const [text, setText] = useState('');
   const g = game(id);
   const p = g?.passes[index];
@@ -356,7 +345,7 @@ export function Results({ id }: { id: string }) {
   const nav = useNav();
   const { game, me, user } = useStore();
   const bar = useGameBar(game(id));
-  const name = useName();
+  const name = useDisplayName();
   // Categories whose ballots are open: tap the vote count to see who voted for whom.
   const [open, setOpen] = useState<string[]>([]);
   const g = game(id);
@@ -480,13 +469,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.muted,
   },
-  gameName: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.cyan,
-    textAlign: 'center',
-    ...comicShadow,
-  },
   bannerName: {
     fontFamily: fonts.bold,
     fontSize: 20,
@@ -572,12 +554,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.yellow,
     paddingHorizontal: 4,
-  },
-  pickerBack: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    padding: 20,
   },
   picker: {
     gap: 12,

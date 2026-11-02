@@ -189,7 +189,8 @@ export function botPass(g: Game, now: number): Game {
 }
 
 const CHAT_LINES = ['😂😂😂', 'No way!', 'I knew it 👀', 'Who asked that??', 'Hurry up with the lighter 🔥', "I'm not saying anything 🤐", 'This game is getting spicy 🌶️', 'Ok who wrote that question 😅'];
-const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
+// Ready-made comments: bots post them, and players can tap them on the comments screen.
+export const ROASTS = ['😂 No way!', '🎯 Called it', '💀 Busted', '🙈 Awkward...', '🔥 Savage', '🤥 Liar!'];
 
 // A bot answers when you write in the chat.
 function botChat(state: DemoState, g: Game, now: number): Game {

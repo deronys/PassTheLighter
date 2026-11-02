@@ -1,5 +1,5 @@
-// Keeps the demo server's state, saves it on the phone, moves the bots every
-// second and gives the screens one set of actions. A real online backend would
+// Keeps the demo server's state, saves it on the phone, moves the bots on
+// time and gives the screens one set of actions. A real online backend would
 // sit behind the same actions.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +16,6 @@ const OLD_KEYS = ['ptl.demo.v1', 'ptl.demo.v2', 'ptl.demo.v3'];
 type Store = {
   ready: boolean;
   state: DemoState;
-  now: number;
   me: User;
   user: (id: string) => User;
   game: (id: string) => Game;
@@ -62,7 +61,6 @@ const UNKNOWN: User = { id: '?', name: 'Someone', color: '#666666' };
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DemoState>(newDemo);
   const [ready, setReady] = useState(false);
-  const [now, setNow] = useState(Date.now());
   const [toast, setToast] = useState<Store['toast']>(null);
   const latest = useRef(state);
   latest.current = state;
@@ -82,17 +80,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setMuted(!state.settings.sound);
   }, [state, ready]);
 
-  // The bots' clock. It checks often so a bot moves right on time, but only
-  // redraws the countdowns once a second.
+  // The bots' clock. It checks often so a bot moves right on time, and only
+  // redraws the screens when a bot actually did something.
   useEffect(() => {
     if (!ready) return;
-    let second = 0;
     const timer = setInterval(() => {
       const t = Date.now();
-      if (Math.floor(t / 1000) !== second) {
-        second = Math.floor(t / 1000);
-        setNow(t);
-      }
       const before = latest.current;
       const after = tick(before, t);
       if (after !== before) {
@@ -128,7 +121,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       ready,
       state,
-      now,
       me,
       user: (id) => (id === me.id ? me : state.friends.find((f) => f.id === id) ?? UNKNOWN),
       game: (id) => state.games.find((g) => g.id === id)!,
@@ -166,7 +158,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       botMove: (id) => update((s) => ({ ...s, games: s.games.map((g) => (g.id === id && botHolds(s, g) ? botPass(g, Date.now()) : g)) })),
       seeEnd: (id) => update((s) => (s.endSeen[id] ? s : { ...s, endSeen: { ...s.endSeen, [id]: true } })),
     };
-  }, [state, ready, now, toast]);
+  }, [state, ready, toast]);
 
   return <Context.Provider value={store}>{children}</Context.Provider>;
 }

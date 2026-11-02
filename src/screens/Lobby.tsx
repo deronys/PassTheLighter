@@ -1,6 +1,6 @@
 // 05 Game list, 06 Invite friends, 07 Waiting room and 07b Invitation.
-import { useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { useNav } from '../nav';
@@ -10,9 +10,9 @@ import { useStore } from '../online/store';
 import { BotMoveButton } from './DevBot';
 import { useGameBar } from './gameBar';
 import { colors, comicShadow, fonts } from '../theme';
-import { Avatar, ComicButton, Panel, Screen, Title } from '../ui/kit';
+import { Avatar, ComicButton, Dialog, Panel, Screen, Title } from '../ui/kit';
 
-export function ago(ms: number) {
+function ago(ms: number) {
   const min = Math.floor(ms / 60000);
   if (min < 1) return 'just now';
   if (min < 60) return `${min} min. ago`;
@@ -20,6 +20,18 @@ export function ago(ms: number) {
   if (h < 24) return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
   const d = Math.floor(h / 24);
   return `${d} ${d === 1 ? 'day' : 'days'} ago`;
+}
+
+// "Last move" only counts minutes, so the list redraws twice a minute on its own.
+const CLOCK_MS = 30_000;
+
+function useClock(): number {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), CLOCK_MS);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
 }
 
 const STATUS: Record<string, { label: string; color: string }> = {
@@ -34,7 +46,8 @@ const STATUS: Record<string, { label: string; color: string }> = {
 
 export function GameList() {
   const nav = useNav();
-  const { state, me, user, now, remove } = useStore();
+  const { state, me, user, remove } = useStore();
+  const now = useClock();
   const games = visibleTo(state.games, me.id);
   // The game whose X was tapped, waiting for "are you sure?".
   const [leaving, setLeaving] = useState<Game | null>(null);
@@ -42,26 +55,22 @@ export function GameList() {
 
   return (
     <Screen title="GAME LIST" onBack={nav.back}>
-      <Modal visible={!!leaving} transparent animationType="fade" onRequestClose={() => setLeaving(null)}>
-        <View style={styles.modalBack}>
-          <Panel style={styles.modal}>
-            <Title size={26}>{ends ? 'END THIS GAME?' : 'LEAVE THIS GAME?'}</Title>
-            <Text style={styles.endingLabel}>
-              {ends
-                ? `Are you sure? You're the host, so "${leaving!.name}" ends for everyone.`
-                : `Are you sure you want to leave "${leaving?.name ?? ''}"? It will be removed from your list.`}
-            </Text>
-            <ComicButton
-              label={ends ? 'YES, END IT' : 'YES, LEAVE'}
-              onPress={() => {
-                remove(leaving!.id);
-                setLeaving(null);
-              }}
-            />
-            <ComicButton label="CANCEL" color="yellow" small onPress={() => setLeaving(null)} />
-          </Panel>
-        </View>
-      </Modal>
+      <Dialog visible={!!leaving} onClose={() => setLeaving(null)}>
+        <Title size={26}>{ends ? 'END THIS GAME?' : 'LEAVE THIS GAME?'}</Title>
+        <Text style={styles.endingLabel}>
+          {ends
+            ? `Are you sure? You're the host, so "${leaving!.name}" ends for everyone.`
+            : `Are you sure you want to leave "${leaving?.name ?? ''}"? It will be removed from your list.`}
+        </Text>
+        <ComicButton
+          label={ends ? 'YES, END IT' : 'YES, LEAVE'}
+          onPress={() => {
+            remove(leaving!.id);
+            setLeaving(null);
+          }}
+        />
+        <ComicButton label="CANCEL" color="yellow" small onPress={() => setLeaving(null)} />
+      </Dialog>
       <View style={styles.center}>
         <ComicButton label="CREATE GAME" sound={null} onPress={() => nav.push({ name: 'invite' })} style={styles.create} />
       </View>
@@ -231,41 +240,37 @@ export function InviteFriends() {
         </View>
       </View>
 
-      <Modal visible={naming} transparent animationType="fade" onRequestClose={() => setNaming(false)}>
-        <View style={styles.modalBack}>
-          <Panel style={styles.modal}>
-            <Title size={26}>NAME YOUR GAME</Title>
-            <TextInput value={name} onChangeText={setName} style={styles.input} maxLength={24} autoFocus />
-            <Text style={styles.endingLabel}>The game ends when someone gets the lighter</Text>
-            <View style={styles.endingRow} accessibilityRole="radiogroup">
-              {Array.from({ length: MAX_LIGHTERS_TO_END - MIN_LIGHTERS_TO_END + 1 }, (_, i) => MIN_LIGHTERS_TO_END + i).map((n) => (
-                <Pressable
-                  key={n}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: ending === n }}
-                  accessibilityLabel={`${n} times`}
-                  onPress={() => setEnding(n)}
-                  style={[styles.endingChoice, ending === n && styles.endingChoiceOn]}
-                >
-                  <Text style={[styles.endingNumber, ending === n && styles.endingNumberOn]}>{n}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={styles.endingLabel}>times. More times means a longer game.</Text>
-            <ComicButton
-              label="SEND INVITES"
-              sound={null}
-              disabled={!name.trim()}
-              onPress={() => {
-                setNaming(false);
-                const id = create(name.trim(), picked, ending);
-                nav.replace({ name: 'game', id });
-              }}
-            />
-            <ComicButton label="CANCEL" color="yellow" small onPress={() => setNaming(false)} />
-          </Panel>
+      <Dialog visible={naming} onClose={() => setNaming(false)}>
+        <Title size={26}>NAME YOUR GAME</Title>
+        <TextInput value={name} onChangeText={setName} style={styles.input} maxLength={24} autoFocus />
+        <Text style={styles.endingLabel}>The game ends when someone gets the lighter</Text>
+        <View style={styles.endingRow} accessibilityRole="radiogroup">
+          {Array.from({ length: MAX_LIGHTERS_TO_END - MIN_LIGHTERS_TO_END + 1 }, (_, i) => MIN_LIGHTERS_TO_END + i).map((n) => (
+            <Pressable
+              key={n}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: ending === n }}
+              accessibilityLabel={`${n} times`}
+              onPress={() => setEnding(n)}
+              style={[styles.endingChoice, ending === n && styles.endingChoiceOn]}
+            >
+              <Text style={[styles.endingNumber, ending === n && styles.endingNumberOn]}>{n}</Text>
+            </Pressable>
+          ))}
         </View>
-      </Modal>
+        <Text style={styles.endingLabel}>times. More times means a longer game.</Text>
+        <ComicButton
+          label="SEND INVITES"
+          sound={null}
+          disabled={!name.trim()}
+          onPress={() => {
+            setNaming(false);
+            const id = create(name.trim(), picked, ending);
+            nav.replace({ name: 'game', id });
+          }}
+        />
+        <ComicButton label="CANCEL" color="yellow" small onPress={() => setNaming(false)} />
+      </Dialog>
     </Screen>
   );
 }
@@ -502,15 +507,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 11,
     color: colors.white,
-  },
-  modalBack: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modal: {
-    gap: 14,
   },
   input: {
     backgroundColor: colors.white,

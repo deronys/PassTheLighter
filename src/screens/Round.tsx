@@ -5,11 +5,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 
 import { useNav } from '../nav';
-import { firstName } from '../online/demo';
 import { type Game, canBurn, canSee, lastHolder, lightersToEnd, ordinal } from '../online/rules';
 import { useStore } from '../online/store';
 import { colors, comicShadow, fonts } from '../theme';
 import { Avatar, HiddenTicket, LighterIcon, QuestionCoin } from '../ui/kit';
+import { useDisplayName } from './gameBar';
 
 // The passes that carried a question, oldest first. Each one is a round; the
 // final pass has no question, it only answers the round before it.
@@ -24,7 +24,7 @@ export function runningCounts(game: Game): number[] {
 export function Round({ game, index, n, size = 44, counts }: { game: Game; index: number; n: number; size?: number; counts?: number[] }) {
   const nav = useNav();
   const { me, user } = useStore();
-  const name = (id: string) => (id === me.id ? 'You' : firstName(user(id)));
+  const name = useDisplayName();
   const NAME = (id: string) => name(id).toUpperCase();
   const asked = game.passes[index];
   const answer = game.passes[index + 1];
@@ -88,7 +88,7 @@ export function Round({ game, index, n, size = 44, counts }: { game: Game; index
 }
 
 // The last pass: no question, it just ends the game.
-export function FinalPass({ name, n }: { name: string; n: number }) {
+function FinalPass({ name, n }: { name: string; n: number }) {
   return (
     <View style={styles.final}>
       <Text style={styles.finalText}>

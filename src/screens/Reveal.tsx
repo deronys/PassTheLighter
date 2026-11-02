@@ -1,18 +1,18 @@
 // 11 Burn the question, 12 Game progress and 13 the advertisement.
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { buzz, play } from '../feedback';
 import { useNav } from '../nav';
 import { firstName } from '../online/demo';
-import { type Game, canSee } from '../online/rules';
+import { canSee } from '../online/rules';
 import { useStore } from '../online/store';
 import { BotMoveButton } from './DevBot';
-import { useGameBar } from './gameBar';
+import { useDisplayName, useGameBar } from './gameBar';
 import { Round, roundIndexes, runningCounts } from './Round';
 import { colors, comicShadow, fonts, nativeDriver } from '../theme';
-import { Avatar, BubbleText, ComicButton, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
+import { Avatar, BubbleText, ComicButton, Dialog, GameName, HiddenTicket, Panel, PassBanner, QuestionCoin, Screen, SpeechBubble, Title, art } from '../ui/kit';
 
 const AD_MS = 5000;
 // How often the demo pretends no ad could be loaded.
@@ -24,6 +24,7 @@ type BurnProps = { id: string; index: number; revealed?: boolean; missed?: boole
 export function BurnQuestion({ id, index, revealed, missed }: BurnProps) {
   const nav = useNav();
   const { game, me, user } = useStore();
+  const name = useDisplayName();
   const bar = useGameBar(game(id));
   const [noAd, setNoAd] = useState(false);
   const [popup, setPopup] = useState(!!revealed);
@@ -40,7 +41,6 @@ export function BurnQuestion({ id, index, revealed, missed }: BurnProps) {
   }
   const next = g.passes[index + 1];
   const seen = canSee(g, index, me.id);
-  const name = (uid: string) => (uid === me.id ? 'You' : firstName(user(uid)));
   const asker = user(q.from);
 
   const burnIt = () => {
@@ -125,29 +125,25 @@ function RevealPopup({ visible, onClose, asker, target, question }: { visible: b
   }, [visible, flame, text]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.modalBack} onPress={onClose} accessibilityLabel="Close">
-        <Panel style={styles.popup}>
-          <Animated.Image
-            source={art.flame}
-            resizeMode="contain"
-            style={[styles.popupFlame, { transform: [{ scale: flame.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }], opacity: flame }]}
-          />
-          <Title size={34} style={styles.centerText}>
-            BURNED!
-          </Title>
-          <Animated.View style={[styles.popupBody, { opacity: text }]}>
-            <Text style={styles.popupLine}>
-              {asker} asked {target === 'You' ? 'you' : target}:
-            </Text>
-            <SpeechBubble tail="top">
-              <BubbleText>{question}</BubbleText>
-            </SpeechBubble>
-          </Animated.View>
-          <ComicButton label="GOT IT" color="yellow" onPress={onClose} />
-        </Panel>
-      </Pressable>
-    </Modal>
+    <Dialog visible={visible} onClose={onClose} closeOnBackdrop>
+      <Animated.Image
+        source={art.flame}
+        resizeMode="contain"
+        style={[styles.popupFlame, { transform: [{ scale: flame.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }], opacity: flame }]}
+      />
+      <Title size={34} style={styles.centerText}>
+        BURNED!
+      </Title>
+      <Animated.View style={[styles.popupBody, { opacity: text }]}>
+        <Text style={styles.popupLine}>
+          {asker} asked {target === 'You' ? 'you' : target}:
+        </Text>
+        <SpeechBubble tail="top">
+          <BubbleText>{question}</BubbleText>
+        </SpeechBubble>
+      </Animated.View>
+      <ComicButton label="GOT IT" color="yellow" onPress={onClose} />
+    </Dialog>
   );
 }
 
@@ -171,7 +167,7 @@ export function GameProgress({ id }: { id: string }) {
 
   return (
     <Screen title="GAME PROGRESS" onBack={nav.back} {...bar} onLighters={undefined}>
-      <Text style={styles.gameName}>{g.name.toUpperCase()}</Text>
+      <GameName name={g.name} />
       {holder?.id === me.id ? (
         // To the game screen, where you choose who gets the lighter.
         <Pressable accessibilityRole="button" accessibilityLabel="You have the lighter. Click to pass it" onPress={() => {
@@ -276,13 +272,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: 'center',
   },
-  gameName: {
-    fontFamily: fonts.comic,
-    fontSize: 18,
-    color: colors.cyan,
-    textAlign: 'center',
-    ...comicShadow,
-  },
   bannerName: {
     fontFamily: fonts.bold,
     fontSize: 20,
@@ -310,16 +299,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 23,
     color: colors.white,
-  },
-  modalBack: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  popup: {
-    gap: 14,
-    alignItems: 'stretch',
   },
   popupFlame: {
     width: 110,
